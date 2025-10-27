@@ -45,7 +45,6 @@ inferAvg model = do
 -- Car starting example from Dario: BOB
 
 -- type MultiVal  a = MultiVal a
-type InterventionPointKey m a = HKey T (Delta m a)
 
 getCounterfactual :: MultiVal a -> a
 getCounterfactual (MultiVal (ns, f)) = f (constWorld True ns)
@@ -56,7 +55,7 @@ run model = getM model empty
 infer model = inferAvg ((\b -> if b then 1.0 else 0.0) <$> model)
 
 -- bobCarModel :: MonadDistribution m
---     => HKey T (Delta m Bool) -> Caus m (MultiVal Bool, MultiVal Bool, MultiVal Bool)
+--     => InterventionPointKey m Bool -> Caus m (MultiVal Bool, MultiVal Bool, MultiVal Bool)
 -- bobCarModel fuelKey = do -- Caus
 --     fuel <- sample (pure (bernoulli 0.8));
 --     fuelInt <- new_ fuelKey fuel;
@@ -95,7 +94,7 @@ bobInferenceCode = do
 
 bobCarModelIntervenedAndConditioned ::
   (MonadMeasure m) =>
-  HKey T (Delta m Bool) ->
+  InterventionPointKey m Bool ->
   Caus m (MultiVal Bool, MultiVal Bool, MultiVal Bool)
 bobCarModelIntervenedAndConditioned fuelKey = do
   -- Caus
@@ -146,7 +145,7 @@ bobCarStartsMain = do
 
 aliceCarModel ::
   (MonadDistribution m) =>
-  HKey T (Delta m Bool) ->
+  InterventionPointKey m Bool ->
   Caus m (MultiVal Bool, MultiVal Bool)
 aliceCarModel fuelKey = do
   -- Caus
@@ -161,7 +160,7 @@ aliceCarModel fuelKey = do
 
 aliceCarModelIntervenedAndConditioned ::
   (MonadMeasure m) =>
-  HKey T (Delta m Bool) ->
+  InterventionPointKey m Bool ->
   Caus m (MultiVal Bool, MultiVal Bool)
 aliceCarModelIntervenedAndConditioned fuelKey = do
   -- Caus
@@ -191,13 +190,13 @@ aliceCarStartsMain = do
 
 -- Dario's question on expressiveness losses if we identify keys with names
 
-modelOperation1 :: Caus m (MultiVal a) -> HKey T (Delta m Int) -> Caus m (MultiVal a)
+modelOperation1 :: Caus m (MultiVal a) -> InterventionPointKey m Int -> Caus m (MultiVal a)
 modelOperation1 model key =
   let newModel1 = do_ key (Value 5) "branch1" model
    in let newModel2 = do_ key (Value 10) "branch2" newModel1
        in newModel2
 
-modelOperation2 :: Caus m (MultiVal a) -> HKey T (Delta m Int) -> HKey T (Delta m Int) -> Caus m (MultiVal a)
+modelOperation2 :: Caus m (MultiVal a) -> InterventionPointKey m Int -> InterventionPointKey m Int -> Caus m (MultiVal a)
 modelOperation2 model key1 key2 =
   let newModel1 = do_ key1 (Value 5) "branch" model
    in let newModel2 = do_ key2 (Value 10) "branch" newModel1

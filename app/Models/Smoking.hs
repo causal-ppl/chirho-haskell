@@ -218,7 +218,7 @@ main_II = do
 causal_model ::
   (MonadDistribution m) =>
   Param m ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal (Stress, Smoke, Cancer))
 causal_model (stress_prob, smokes_cond_prob, cancer_cond_prob {--}) smoke_key = do
   -- Caus
@@ -232,7 +232,7 @@ causal_model_intervened ::
   (MonadDistribution m) =>
   Param m ->
   Smoke ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal (Stress, Smoke, Cancer))
 causal_model_intervened params smoke_int {--} smoke_key =
   let model = causal_model params {--} smoke_key
@@ -304,7 +304,7 @@ causal_population_model ::
   (MonadDistribution m) =>
   Param m ->
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 causal_population_model params n_individuals {--} smoke_key =
   let list = replicate n_individuals (causal_model params smoke_key)
@@ -313,7 +313,7 @@ causal_population_model params n_individuals {--} smoke_key =
 bayesian_population_model ::
   (MonadDistribution m) =>
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 bayesian_population_model n_individuals {--} smoke_key = do
   -- Caus
@@ -357,7 +357,7 @@ intervened_causal_population_model ::
   (MonadDistribution m) =>
   Param m ->
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 intervened_causal_population_model params n_individuals {--} smoke_key =
   let list =
@@ -369,7 +369,7 @@ intervened_causal_population_model params n_individuals {--} smoke_key =
 intervened_bayesian_population_model ::
   (MonadDistribution m) =>
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 intervened_bayesian_population_model n_individuals {--} smoke_key = do
   -- Caus
@@ -424,7 +424,7 @@ type AltParam m = (m Stress, Stress -> m Cancer, Stress -> Cancer -> m Smoke)
 alt_causal_model ::
   (MonadDistribution m) =>
   AltParam m ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal (Stress, Smoke, Cancer))
 alt_causal_model (stress_prob, cancer_cond_prob, smokes_cond_prob) smoke_key = do
   -- Caus
@@ -451,7 +451,7 @@ alt_population_model ::
   (MonadDistribution m) =>
   AltParam m ->
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 alt_population_model params n_individuals {--} smoke_key =
   let list = replicate n_individuals (alt_causal_model params smoke_key)
@@ -482,7 +482,7 @@ alt_parameter_prior = do
 alt_bayesian_population_model ::
   (MonadDistribution m) =>
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 alt_bayesian_population_model n_individuals {--} smoke_key = do
   -- Caus
@@ -526,7 +526,7 @@ alt_intervened_causal_model ::
   (MonadDistribution m) =>
   AltParam m ->
   Smoke ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal (Stress, Smoke, Cancer))
 alt_intervened_causal_model params smoke_int {--} smoke_key =
   let model = alt_causal_model params {--} smoke_key
@@ -536,7 +536,7 @@ alt_intervened_causal_population_model ::
   (MonadDistribution m) =>
   AltParam m ->
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 alt_intervened_causal_population_model params n_individuals {--} smoke_key =
   let list =
@@ -547,7 +547,7 @@ alt_intervened_causal_population_model params n_individuals {--} smoke_key =
 alt_intervened_bayesian_population_model ::
   (MonadDistribution m) =>
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 alt_intervened_bayesian_population_model n_individuals smoke_key = do
   -- Caus
@@ -621,7 +621,7 @@ population_causal_model_uncertain_structure ::
   Param m ->
   AltParam m ->
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 population_causal_model_uncertain_structure params alt_params n_individuals {--} smoke_key = do
     -- Caus
@@ -637,7 +637,7 @@ population_causal_model_uncertain_structure params alt_params n_individuals {--}
 bayesian_population_causal_model_uncertain_structure ::
   (MonadDistribution m) =>
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 bayesian_population_causal_model_uncertain_structure n_individuals {--} smoke_key = do
   -- Caus
@@ -695,7 +695,7 @@ main_VI_A = do
 bayesian_intervened_causal_model_uncertain_structure ::
   (MonadDistribution m) =>
   Int ->
-  HKey T (Delta m Smoke) ->
+  InterventionPointKey m Smoke ->
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 bayesian_intervened_causal_model_uncertain_structure n_individuals smoke_key =     do -- Caus
     -- Here the ChiRho tutorial does this intervention with a tensor of assignments; I don't see an 
@@ -828,19 +828,19 @@ main_VII = do
     -- pltResult <- file ("output/" ++ filename) plt
     -- print pltResult
     where
-        priorATE :: (MonadDistribution m) => HKey T (Delta m Smoke) -> m Double
+        priorATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
         priorATE smoke_key = do
             results <- getM (intervened_bayesian_population_model 1000 smoke_key) empty
             let (ns, table) = getMultiVal results
             let interventional = table (constWorld True ns)
             return $ ate interventional
-        trueATE :: (MonadDistribution m) => HKey T (Delta m Smoke) -> m Double
+        trueATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
         trueATE smoke_key = do
             individuals <- getM (intervened_causal_population_model data_params 1000 smoke_key) empty
             let (ns, table) = getMultiVal individuals
             let interventional = table (constWorld True ns)
             return $ ate interventional
-        posteriorPredDistribution :: (MonadMeasure m) => HKey T (Delta m Smoke) -> m (MultiVal [(Stress, Smoke, Cancer)])
+        posteriorPredDistribution :: (MonadMeasure m) => InterventionPointKey m Smoke -> m (MultiVal [(Stress, Smoke, Cancer)])
         posteriorPredDistribution smoke_key = do
             -- Generate "data"
             let n_invididuals = 500
@@ -863,7 +863,7 @@ main_VII = do
             -- @Dario: WHICH ONE TO DO between the following 2:
             return samples
             -- getM bayesian_population_counterfactual_model empty
-        posteriorATE :: (MonadMeasure m) => HKey T (Delta m Smoke) -> m (Double, Double, Double)
+        posteriorATE :: (MonadMeasure m) => InterventionPointKey m Smoke -> m (Double, Double, Double)
         posteriorATE smoke_key = do
             individuals <- posteriorPredDistribution smoke_key
             let (ns, table) = getMultiVal individuals
