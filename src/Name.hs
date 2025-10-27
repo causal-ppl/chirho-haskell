@@ -22,4 +22,3 @@ fromListNameSet names = NS (Data.Set.fromList names)
 instance Show NameSet where
   show :: NameSet -> String
   show (NS set) = "{" ++ concatMap (++ ", ") (sort (Data.Set.toList set)) ++ "}"
-
