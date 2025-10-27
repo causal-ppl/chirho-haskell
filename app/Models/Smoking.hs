@@ -14,7 +14,6 @@ import Control.Monad.Bayes.Sampler.Lazy
 import Control.Monad.Bayes.Sampler.Strict (sampleIO, sampler)
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Trans.Class (lift)
-import Data.HMap
 import Graphics.Matplotlib
 import Control.Monad.Bayes.Enumerator (toEmpiricalWeighted, toEmpirical)
 import Control.Monad.Bayes.Inference.MCMC

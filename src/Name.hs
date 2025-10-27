@@ -1,9 +1,8 @@
 {-# LANGUAGE InstanceSigs #-}
-module Common where
+module Name where
 import Data.Set
 import Data.List (sort)
 
--- Common utility functions and types can be defined here
 type Name = String
 
 newtype NameSet = NS (Set Name) deriving (Eq, Ord)

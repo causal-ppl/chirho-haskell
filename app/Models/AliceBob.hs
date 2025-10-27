@@ -10,7 +10,6 @@ import Control.Monad.Bayes.Sampler.Lazy
 import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.Bayes.Weighted
 import Data.Functor.Identity
-import Data.HMap
 
 inferAvg :: WeightedT Sampler Double -> IO Double
 inferAvg model = do

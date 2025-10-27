@@ -5,7 +5,7 @@ import Control.Monad.Bayes.Class
 import Data.List (sort, sortBy)
 import Data.Map (Map, empty, fromList, fromSet, insert, lookup, restrictKeys, toList, union)
 import Data.Set (Set, empty, fromList, insert, toList, union)
-import Common
+import Name
     ( NameSet(..),
       Name,
       emptyNameSet,

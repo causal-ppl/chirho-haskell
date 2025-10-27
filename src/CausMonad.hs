@@ -1,19 +1,15 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 module CausMonad where
-import Data.HMap 
+-- import Data.HMap 
 import Control.Monad.Trans.Class
 import Control.Monad.Bayes.Class
 import GHC.List
-import Common
+import Name
 import MultiVal
 import Prelude hiding (foldl)
+import InterventionEnv
 
-type Delta m a = List (Intervention m a, Name)
-
-type InterventionPointKey m a = HKey T (Delta m a)
-
-type InterventionEnv = HMap 
 
 newtype Caus m a = M (InterventionEnv  -> m a)
 

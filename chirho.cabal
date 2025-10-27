@@ -27,8 +27,9 @@ library
   exposed-modules:
       CausMonad
       Chirho
-      Common
+      InterventionEnv
       MultiVal
+      Name
   other-modules:
       Paths_chirho
   autogen-modules:
