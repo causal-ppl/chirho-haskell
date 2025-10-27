@@ -1,5 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
-module Val where
+module MultiVal where
 
 import Control.Monad.Bayes.Class
 import Data.List (sort, sortBy)
@@ -13,9 +13,9 @@ import Common
       unionNameSet,
       fromListNameSet )
 
--- | This module defines the Val type and related functions.
+-- | This module defines the MultiVal type and related functions.
 
--- Everything from here onwards is for the Val applicative
+-- Everything from here onwards is for the MultiVal applicative
 
 newtype World = W (Map Name Bool) deriving (Eq, Ord)
 
@@ -49,14 +49,14 @@ fromListWorld xs = W (Data.Map.fromList xs)
 constWorld :: Bool -> NameSet -> World
 constWorld b (NS set) = W (Data.Map.fromSet (const b) set)
 
-newtype Val a = Val (NameSet, World -> a)
+newtype MultiVal a = MultiVal (NameSet, World -> a)
 
-getVal :: Val a -> (NameSet, World -> a)
-getVal (Val v) = v
+getMultiVal :: MultiVal a -> (NameSet, World -> a)
+getMultiVal (MultiVal v) = v
 
 -- sum_(n \subseteq Names) (2^n -> a)
--- sum_(n \subseteq Names) (f : 2^Names -> a | totally defined by values at n)
--- Every (Val a) will have a dependency set and World -> a function that is *constant* for any world w the same value of NameSet
+-- sum_(n \subseteq Names) (f : 2^Names -> a | totally defined by Values at n)
+-- Every (MultiVal a) will have a dependency set and World -> a function that is *constant* for any world w the same Value of NameSet
 -- In other words, we have the restriction operation built in. Could also make the restriction operation explicit, and
 -- reimplement the various operations in terms of it.
 
@@ -65,11 +65,11 @@ getAllRelevantWorlds :: NameSet -> [World]
 getAllRelevantWorlds (NS set) = foldr (\n ws -> concatMap (\w -> [insertWorld n False w, insertWorld n True w]) ws) [emptyWorld] set
 
 -- Utilities
-instance (Show a) => Show (Val a) where
-  show :: Val a -> String
-  show (Val (ns, f)) =
+instance (Show a) => Show (MultiVal a) where
+  show :: MultiVal a -> String
+  show (MultiVal (ns, f)) =
     let relevantWorlds = getAllRelevantWorlds ns
-     in "Val { ns: "
+     in "MultiVal { ns: "
           ++ show ns
           ++ ", f: ["
           ++ concatMap (\(worldStr, val) -> worldStr ++ ": " ++ show val ++ ", ") (zip (map show relevantWorlds) (map f relevantWorlds))
@@ -77,16 +77,16 @@ instance (Show a) => Show (Val a) where
 
 -- TODO: Make a better printing mechanism
 
-instance (Eq a) => Eq (Val a) where
-  (Val (ns1, f)) == (Val (ns2, g)) =
+instance (Eq a) => Eq (MultiVal a) where
+  (MultiVal (ns1, f)) == (MultiVal (ns2, g)) =
     (ns1 == ns2)
       && let relevantWorlds = getAllRelevantWorlds ns1
           in all (\w -> f w == g w) relevantWorlds
 
-instance (Ord a) => Ord (Val a) where
+instance (Ord a) => Ord (MultiVal a) where
   -- This is a completely arbitrary ordering but it works for now.
-  compare :: Val a -> Val a -> Ordering
-  (Val (ns1, f)) `compare` (Val (ns2, g)) =
+  compare :: MultiVal a -> MultiVal a -> Ordering
+  (MultiVal (ns1, f)) `compare` (MultiVal (ns2, g)) =
     case compare ns1 ns2 of
       EQ ->
         let relevantWorlds = getAllRelevantWorlds ns1
@@ -94,14 +94,14 @@ instance (Ord a) => Ord (Val a) where
       ord -> ord
 
 -- Definition starts from here.
-instance Functor Val where
-  fmap :: (a -> b) -> Val a -> Val b
-  fmap f (Val (ns, w)) = Val (ns, f . w)
+instance Functor MultiVal where
+  fmap :: (a -> b) -> MultiVal a -> MultiVal b
+  fmap f (MultiVal (ns, w)) = MultiVal (ns, f . w)
 
-instance Applicative Val where
-  pure x = Val (emptyNameSet, const x)
-  (<*>) :: Val (a -> b) -> Val a -> Val b
-  Val (ns1, f) <*> Val (ns2, g) = Val (unionNameSet ns1 ns2, \w -> f w (g w)) -- Restrict keys already implicit
+instance Applicative MultiVal where
+  pure x = MultiVal (emptyNameSet, const x)
+  (<*>) :: MultiVal (a -> b) -> MultiVal a -> MultiVal b
+  MultiVal (ns1, f) <*> MultiVal (ns2, g) = MultiVal (unionNameSet ns1 ns2, \w -> f w (g w)) -- Restrict keys already implicit
 
 -- Distributive Law
 
@@ -110,38 +110,38 @@ padRestrict :: NameSet -> World -> World
 padRestrict ns w = restrictWorld ns w `unionWorld` fromSetWorld (const False) ns
 
 -- Only works well for commutative monads
-memDist :: (Monad t) => Val (t a) -> t (Val a)
-memDist (Val (ns, f)) =
+memDist :: (Monad t) => MultiVal (t a) -> t (MultiVal a)
+memDist (MultiVal (ns, f)) =
   let accFunction =
         foldr
           ( \world acc ->
-              do g <- acc; value <- f world; return (\w -> if w == world then value else g w) -- Crazy inefficient
+              do g <- acc; val <- f world; return (\w -> if w == world then val else g w) -- Crazy inefficient
           )
           (pure (const $ error "Should never occur")) -- Lack dependent types
           $ getAllRelevantWorlds ns
-   in do acc <- accFunction; return (Val (ns, acc . padRestrict ns)) -- Key restriction happens here.
+   in do acc <- accFunction; return (MultiVal (ns, acc . padRestrict ns)) -- Key restriction happens here.
 
-sample :: (Monad t) => Val (t a) -> t (Val a)
+sample :: (Monad t) => MultiVal (t a) -> t (MultiVal a)
 sample = memDist
 
 data Intervention t a = None | Value a | Func (a -> t a)
 
-intervene :: (Monad t) => Val a -> Intervention t a -> Name -> t (Val a)
-intervene (Val (ns, f)) None _ = return (Val (ns, f)) -- No change
-intervene (Val (ns, f)) (Value v) n =
+intervene :: (Monad t) => MultiVal a -> Intervention t a -> Name -> t (MultiVal a)
+intervene (MultiVal (ns, f)) None _ = return (MultiVal (ns, f)) -- No change
+intervene (MultiVal (ns, f)) (Value v) n =
   let newNameSet = insertName n ns
    in return
-        ( Val
+        ( MultiVal
             ( newNameSet,
               \w -> case lookupWorld n w of
                 Just True -> v
                 _ -> f w
             )
         )
-intervene (Val (ns, f)) (Func g) n =
+intervene (MultiVal (ns, f)) (Func g) n =
   let newNameSet = insertName n ns
    in memDist
-        ( Val
+        ( MultiVal
             ( newNameSet,
               \w -> case lookupWorld n w of
                 Just True -> return (f w)
@@ -149,34 +149,34 @@ intervene (Val (ns, f)) (Func g) n =
             )
         )
 
-liftOp :: (Monad t) => (a -> t b) -> Val a -> t (Val b)
+liftOp :: (Monad t) => (a -> t b) -> MultiVal a -> t (MultiVal b)
 liftOp f = memDist . fmap f
 
 -- Utilities for Score and Condition
-scoreAll :: (MonadFactor m) => Val (Log Double) -> m ()
+scoreAll :: (MonadFactor m) => MultiVal (Log Double) -> m ()
 scoreAll v = do
   _ <- liftOp score v
   return ()
 
-scoreFactual :: (MonadFactor m) => (a -> Log Double) -> Val a -> m ()
-scoreFactual f (Val (ns, w)) = score (f (w $ constWorld False ns))
+scoreFactual :: (MonadFactor m) => (a -> Log Double) -> MultiVal a -> m ()
+scoreFactual f (MultiVal (ns, w)) = score (f (w $ constWorld False ns))
 
 
-scoreCounterFactual :: (MonadFactor m) => (a -> Log Double) -> Val a -> m ()
-scoreCounterFactual f (Val (ns, w)) = score (f (w $ constWorld True ns))
+scoreCounterFactual :: (MonadFactor m) => (a -> Log Double) -> MultiVal a -> m ()
+scoreCounterFactual f (MultiVal (ns, w)) = score (f (w $ constWorld True ns))
 
-conditionAll :: (MonadFactor m) => Val Bool -> m ()
+conditionAll :: (MonadFactor m) => MultiVal Bool -> m ()
 conditionAll v = do
   _ <- liftOp condition v
   return ()
 
-conditionFactual :: (MonadFactor m) => (a -> Bool) -> Val a -> m ()
-conditionFactual f (Val (ns, w)) = condition (f (w (constWorld False ns)))
+conditionFactual :: (MonadFactor m) => (a -> Bool) -> MultiVal a -> m ()
+conditionFactual f (MultiVal (ns, w)) = condition (f (w (constWorld False ns)))
 
-conditionCounterFactual :: (MonadFactor m) => (a -> Bool) -> Val a -> m ()
-conditionCounterFactual f (Val (ns, w)) = condition (f (w $ constWorld True ns))
+conditionCounterFactual :: (MonadFactor m) => (a -> Bool) -> MultiVal a -> m ()
+conditionCounterFactual f (MultiVal (ns, w)) = condition (f (w $ constWorld True ns))
 
--- End Val applicative
+-- End MultiVal applicative
 
 -- do_ :: (Monad m) => (World -> World) -> m a -> m a
 -- do_ f 

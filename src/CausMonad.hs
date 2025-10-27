@@ -6,7 +6,7 @@ import Control.Monad.Trans.Class
 import Control.Monad.Bayes.Class
 import GHC.List
 import Common
-import Val
+import MultiVal
 import Prelude hiding (foldl)
 
 newtype Caus m a = M (HMap -> m a)
@@ -51,12 +51,12 @@ instance (MonadMeasure m) => MonadMeasure (Caus m)
 
 type Delta m a = List (Intervention m a, Name)
 
-new_ :: (Monad m) => HKey x (Delta m a) -> Val a -> Caus m (Val a)
-new_ key defaultValue =
+new_ :: (Monad m) => HKey x (Delta m a) -> MultiVal a -> Caus m (MultiVal a)
+new_ key defaultVal =
     M
     ( \interventions ->
         let ys = findWithDefault [] key interventions
-         in foldl (\comp (x, name) -> comp >>= \val -> intervene val x name) (pure defaultValue) ys
+         in foldl (\comp (x, name) -> comp >>= \val -> intervene val x name) (pure defaultVal) ys
     )
 
 do_ :: HKey x (Delta m a) -> Intervention m a -> Name -> Caus m b -> Caus m b

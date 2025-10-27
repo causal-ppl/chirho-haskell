@@ -11,4 +11,4 @@ import qualified Models.Smoking
 
 
 main :: IO ()
-main = Models.Smoking.main
+main = Models.AliceBob.main

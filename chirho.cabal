@@ -28,7 +28,7 @@ library
       CausMonad
       Chirho
       Common
-      Val
+      MultiVal
   other-modules:
       Paths_chirho
   autogen-modules:
