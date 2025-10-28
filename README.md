@@ -62,9 +62,8 @@ We have implemented three sets of examples.
        ```haskell
         let v1 = ({b1}, [{} -> 1, {b1} -> 2]) in
         let v2 = ({b2}, [{} -> 10, {b2} -> 20]) in
-        (+) <&>  v1 <*> v2 
-        
-        = ({b1, b2}, [{} -> 11, {b1} -> 12, {b2} -> 21, {b1, b2} -> 22])
+            (+) <&>  v1 <*> v2 
+        == ({b1, b2}, [{} -> 11, {b1} -> 12, {b2} -> 21, {b1, b2} -> 22])
        ```
        Without going into too much detail, this dependency-tracking and sharing mechanism is what corresponds to sharing non-intervened exogenous variables across the factual and counterfactual worlds when doing twinning. 
     - This interacts with the probabilistic mechanism in the following way: we have an operation `sample : MultiVal (Caus a) -> Caus (MultiVal a)` that allows multiworld distributions to be turned into a distribution over multiworld samples. This is not a distributive law: the operation does not commute with the applicative structure of `MultiVal`. We exemplify this in the [AliceBob example](/notes/AliceBob.md).
@@ -73,13 +72,13 @@ We have implemented three sets of examples.
 
 ## Semantic aspects
   - **Morally** the interventional mechanism (the `Caus` monad) should correspond to the following (graded) monad:
-    $$
+    ```math
     \mathsf{Caus} \ [X_i: A_i]_i \ B \overset{\triangle}{=} (\prod_i \mathsf{List}(\mathsf{Intervention}(A_i) \times \mathsf{Names})) \to \mathsf{Prob}(B)
-    $$
+    ```
   - and the counterfactual mechanism (the `MultiVal` functor) should correspond to the following:
-    $$
+    ```math
     \mathsf{MultiVal}(A) \overset{\triangle}{=} \coprod_{N \subseteq_{fin}\mathsf{Names}}[A^{(2^N)}]
-    $$
+    ```
 
 ## Correspondences and differences with ChiRho in Python
 - `Caus` type
