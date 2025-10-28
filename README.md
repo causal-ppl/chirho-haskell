@@ -54,7 +54,7 @@ We have implemented three sets of examples.
       var car_starts = function(fuel, battery) {
         return fuel & battery;
       }
-      return car_starts(fuel_int,battery_int);
+      return car_starts(fuel, battery);
     }
     ```
     and we wish to compute the following: Given that Bob's car did not start (in the factual world), what's the probability that it would have started, (in the counterfactual world) where Bob had refueled his car the day before. Note that here, `battery` is treated as an exogenous variable: its value is shared between the factual and counterfactual world. 
@@ -68,11 +68,7 @@ We have implemented three sets of examples.
         var electronics = flip(0.9)
         return fuel & electronics;
       }
-      // condition
-      condition(car_starts(fuel) == false);
-      // twinning + intervention
-      var fuel_int = true;
-      return car_starts(fuel_int);
+      return car_starts(fuel);
     }
     ```
     This example demonstrates how both can be implemented in ChiRho using subtleties pertaining to how the applicative functor and the monad interact. More details [here](/notes/AliceBob.md). 
