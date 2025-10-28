@@ -71,9 +71,9 @@ We have implemented three sets of examples.
   - `Name.hs`: This file contains the constructs and utilities to deal with names of branching points.
 
 ## Semantic aspects
-  - **Morally** the interventional mechanism (the `Caus` monad) should correspond to the following (graded) monad:
+  - **Morally** the interventional mechanism (the `Caus` monad) should correspond to the following monad graded on intervention points:
     ```math
-    \mathsf{Caus} \ [X_i: A_i]_i \ B := (\prod_i \mathsf{List}(\mathsf{Intervention}(A_i) \times \mathsf{Names})) \to \mathsf{Prob}(B)
+    \mathsf{Caus} \ [A_i]_i \ B := (\prod_i \mathsf{List}(\mathsf{Intervention}(A_i) \times \mathsf{Names})) \to \mathsf{Prob}(B)
     ```
   - and the counterfactual mechanism (the `MultiVal` functor) should correspond to the following:
     ```math
