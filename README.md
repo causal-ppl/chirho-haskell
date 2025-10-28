@@ -90,3 +90,5 @@ We have implemented three sets of examples.
   - Applicative structure: tensor broadcasting
   - `sample: MultiVal (Caus a) -> Caus (MultiVal a)`: vectorised sampling.
 
+## License
+This repository is licensed under the [BSD3](LICENSE) license. 
