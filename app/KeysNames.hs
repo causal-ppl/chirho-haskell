@@ -44,7 +44,7 @@ differentKeysSameNameMain = do
         return $ (,) <$> a <*> b
   let model2 = interveneOnDifferentKeysWithSameName model key1 key2
   let runModel2 = runIdentity $ getM model2 empty
-  print "Expected values: [] -> (1,1), [branch] -> (5,1) for key1 intervention, [branch] -> (1,10) for key2 intervention, [branch, branch] -> (5,10)."
+  print "Expected values: [] -> (1,1), [branch] -> (5,10), because the two interventions have effectively been bundled together by sharing the same name."
   print "Actual values:"
   print runModel2
 
