@@ -43,9 +43,41 @@ Then, use `stack exec myownmodel` to execute your model.
 ## Examples
 
 We have implemented three sets of examples.
-- `alicebob` (in `AliceBob.hs`): contains a simple scenario of doing inference on the causal model of whether a car will start. The Bob model is the one presented in the extended abstract: the car starts if both it has fuel and its battery is not dead, which happen at a certain probability. Given that it did not actually start, what's the probability that it would have started had Bob refueled his car the day before. Note that both of `fuel` and `battery` are treated as exogenous: if we intervene on fuel, the factual world and the counterfactual world will share the same battery sample. The Alice task is similar, except the battery fault (renamed as `electronics`) occurs endogenously, i.e. in the factual and counterfactual worlds, the fault happens independently. This example demonstrates how both can be implemented, and some subtlety about how the applicative functor and the monad interact. More details [here](/notes/AliceBob.md).
+- `alicebob` (in `AliceBob.hs`): contains two examples: Alice and Bob. Both model scenarios of car starting. 
+  - The Bob model is the one presented in the extended abstract. We have a model that can be written in WebPPL as 
+    ```js
+    var bob = function() {
+      // external variables
+      var fuel = flip(0.8)
+      var battery = flip(0.9)
+      // evolution
+      var car_starts = function(fuel, battery) {
+        return fuel & battery;
+      }
+      return car_starts(fuel_int,battery_int);
+    }
+    ```
+    and we wish to compute the following: Given that Bob's car did not start (in the factual world), what's the probability that it would have started, (in the counterfactual world) where Bob had refueled his car the day before. Note that here, `battery` is treated as an exogenous variable: its value is shared between the factual and counterfactual world. 
+  - The Alice model is a slight variation of the Bob model, where `battery` is replaced with `electronics`, which is treated as endogenous randomness. This means that its value is independently resampled between the factual and counterfactual worlds. 
+    ```js
+    var alice = function() {
+      // external variables
+      var fuel = flip(0.8)
+      // evolution
+      var car_starts = function(fuel) {
+        var electronics = flip(0.9)
+        return fuel & electronics;
+      }
+      // condition
+      condition(car_starts(fuel) == false);
+      // twinning + intervention
+      var fuel_int = true;
+      return car_starts(fuel_int);
+    }
+    ```
+    This example demonstrates how both can be implemented in ChiRho using subtleties pertaining to how the applicative functor and the monad interact. More details [here](/notes/AliceBob.md). 
 - `keysnames` (in `KeysNames.hs`): contains examples showing why keys and names should be different, and what expressivity gain we obtain by keeping them distinct. In particular, we show why it might be useful to have interventions on the same intervention point and different names, as well as having interventions on different intervention points with the same name. More details [here](/notes/KeysNames.md).
-- `smoking` (in `Smoking.hs`): this is a (currently partial) reproduction of the [ChiRho tutorial](https://basisresearch.github.io/chirho/tutorial_i.html).
+- `smoking` (in `Smoking.hs`): this is a (currently partial) reproduction of the [ChiRho tutorial](https://basisresearch.github.io/chirho/tutorial_i.html). 
 
 ## Library
 - `ChiRho.hs`: the entry point to the library. This module imports all other modules and specifies the identifiers to be exported.
