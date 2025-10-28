@@ -6,6 +6,8 @@ ChiRho was originally implemented in Python on top of [Pyro](https://pyro.ai). C
 
 ## Hacking
 
+(Due to the similarity of our setup with that of [LazyPPL](https://github.com/lazyppl-team/lazyppl), this section was inspired by their README.)
+
 ### Setup
 <!-- Install Haskell, Install matplotlib and python -->
 This system uses `stack`. Please [install](https://docs.haskellstack.org/en/v1.1.2/install_and_upgrade/) `stack` to use it in the intended way.
