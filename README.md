@@ -43,8 +43,8 @@ Then, use `stack exec myownmodel` to execute your model.
 ## Examples
 
 We have implemented three sets of examples.
-- `alicebob` (in `AliceBob.hs`): contains a simple scenario of doing inference on the causal model of whether a car will start. The Bob model is the one presented in the extended abstract: the car starts if both it has fuel and its battery is not dead, which happen at a certain probability. Given that it did not actually start, what's the probability that it would have started had Bob refueled his car the day before. Note that both of `fuel` and `battery` are treated as exogenous: if we intervene on fuel, the factual world and the counterfactual world will share the same battery sample. The Alice task is similar, except the battery fault (renamed as `electronics`) occurs endogenously, i.e. in the factual and counterfactual worlds, the fault happens independently. This example demonstrates how both can be implemented, and some subtlety about how the applicative functor and the monad interact. More detail [here](/notes/AliceBob.md).
-- `keysnames` (in `KeysNames.hs`): contains examples showing why keys and names should be different, and what expressivity gain we obtain by keeping them distinct. In particular, we show why it might be useful to have interventions on the same intervention point and different names, as well as having interventions on different intervention points with the same name. More detail [here](/notes/KeysNames.md).
+- `alicebob` (in `AliceBob.hs`): contains a simple scenario of doing inference on the causal model of whether a car will start. The Bob model is the one presented in the extended abstract: the car starts if both it has fuel and its battery is not dead, which happen at a certain probability. Given that it did not actually start, what's the probability that it would have started had Bob refueled his car the day before. Note that both of `fuel` and `battery` are treated as exogenous: if we intervene on fuel, the factual world and the counterfactual world will share the same battery sample. The Alice task is similar, except the battery fault (renamed as `electronics`) occurs endogenously, i.e. in the factual and counterfactual worlds, the fault happens independently. This example demonstrates how both can be implemented, and some subtlety about how the applicative functor and the monad interact. More details [here](/notes/AliceBob.md).
+- `keysnames` (in `KeysNames.hs`): contains examples showing why keys and names should be different, and what expressivity gain we obtain by keeping them distinct. In particular, we show why it might be useful to have interventions on the same intervention point and different names, as well as having interventions on different intervention points with the same name. More details [here](/notes/KeysNames.md).
 - `smoking` (in `Smoking.hs`): this is a (currently partial) reproduction of the [ChiRho tutorial](https://basisresearch.github.io/chirho/tutorial_i.html).
 
 ## Library
@@ -73,11 +73,11 @@ We have implemented three sets of examples.
 ## Semantic aspects
   - **Morally** the interventional mechanism (the `Caus` monad) should correspond to the following (graded) monad:
     ```math
-    \mathsf{Caus} \ [X_i: A_i]_i \ B \overset{\triangle}{=} (\prod_i \mathsf{List}(\mathsf{Intervention}(A_i) \times \mathsf{Names})) \to \mathsf{Prob}(B)
+    \mathsf{Caus} \ [X_i: A_i]_i \ B := (\prod_i \mathsf{List}(\mathsf{Intervention}(A_i) \times \mathsf{Names})) \to \mathsf{Prob}(B)
     ```
   - and the counterfactual mechanism (the `MultiVal` functor) should correspond to the following:
     ```math
-    \mathsf{MultiVal}(A) \overset{\triangle}{=} \coprod_{N \subseteq_{fin}\mathsf{Names}}[A^{(2^N)}]
+    \mathsf{MultiVal}(A) := \coprod_{N \subseteq_{fin}\mathsf{Names}}[A^{(2^N)}]
     ```
 
 ## Correspondences and differences with ChiRho in Python
