@@ -16,6 +16,9 @@ newtype Caus m a = M (InterventionEnv  -> m a)
 getM :: Caus m a -> InterventionEnv  -> m a
 getM (M v) = v
 
+run :: Caus m a -> m a
+run model = getM model empty
+
 instance MonadTrans Caus where
   lift :: (Monad m) => m a -> Caus m a
   lift x = M (const x)

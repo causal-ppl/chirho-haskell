@@ -4,7 +4,7 @@
 {-# HLINT ignore "Use camelCase" #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Models.Smoking (main) where
+module Smoking (main) where
 
 import Chirho
 import Control.Monad

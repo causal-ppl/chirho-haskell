@@ -46,17 +46,84 @@ library
     , transformers ==0.6.1.0
   default-language: Haskell2010
 
+executable alicebob
+  main-is: AliceBob.hs
+  other-modules:
+      KeysNames
+      Main
+      Smoking
+      Paths_chirho
+  autogen-modules:
+      Paths_chirho
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -main-is AliceBob
+  build-depends:
+      HMap ==1.3.0
+    , base >=4.7 && <5
+    , chirho
+    , containers
+    , matplotlib
+    , monad-bayes ==1.3.0.4
+    , transformers ==0.6.1.0
+  default-language: Haskell2010
+
 executable chirho-exe
   main-is: Main.hs
   other-modules:
-      Models.AliceBob
-      Models.Smoking
+      AliceBob
+      KeysNames
+      Smoking
       Paths_chirho
   autogen-modules:
       Paths_chirho
   hs-source-dirs:
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      HMap ==1.3.0
+    , base >=4.7 && <5
+    , chirho
+    , containers
+    , matplotlib
+    , monad-bayes ==1.3.0.4
+    , transformers ==0.6.1.0
+  default-language: Haskell2010
+
+executable keysnames
+  main-is: KeysNames.hs
+  other-modules:
+      AliceBob
+      Main
+      Smoking
+      Paths_chirho
+  autogen-modules:
+      Paths_chirho
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -main-is KeysNames
+  build-depends:
+      HMap ==1.3.0
+    , base >=4.7 && <5
+    , chirho
+    , containers
+    , matplotlib
+    , monad-bayes ==1.3.0.4
+    , transformers ==0.6.1.0
+  default-language: Haskell2010
+
+executable smoking
+  main-is: Smoking.hs
+  other-modules:
+      AliceBob
+      KeysNames
+      Main
+      Paths_chirho
+  autogen-modules:
+      Paths_chirho
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -main-is Smoking
   build-depends:
       HMap ==1.3.0
     , base >=4.7 && <5

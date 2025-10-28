@@ -50,21 +50,28 @@ constWorld :: Bool -> NameSet -> World
 constWorld b (NS set) = W (Data.Map.fromSet (const b) set)
 
 newtype MultiVal a = MultiVal (NameSet, World -> a)
-
-getMultiVal :: MultiVal a -> (NameSet, World -> a)
-getMultiVal (MultiVal v) = v
-
--- sum_(n \subseteq Names) (2^n -> a)
--- sum_(n \subseteq Names) (f : 2^Names -> a | totally defined by Values at n)
+-- MultiVal a represents a value that can depend on multiple "names" (branching points)
+-- \sum_(n \subseteq Names) (2^n -> a)
+-- \sum_(n \subseteq Names) (f : 2^Names -> a | totally defined by Values at n)
 -- Every (MultiVal a) will have a dependency set and World -> a function that is *constant* for any world w the same Value of NameSet
 -- In other words, we have the restriction operation built in. Could also make the restriction operation explicit, and
 -- reimplement the various operations in terms of it.
+
+getMultiVal :: MultiVal a -> (NameSet, World -> a)
+getMultiVal (MultiVal v) = v
 
 -- N \subseteq Names |-> [2^N]
 getAllRelevantWorlds :: NameSet -> [World]
 getAllRelevantWorlds (NS set) = foldr (\n ws -> concatMap (\w -> [insertWorld n False w, insertWorld n True w]) ws) [emptyWorld] set
 
 -- Utilities
+
+getFactual :: MultiVal a -> a
+getFactual (MultiVal (ns, f)) = f (constWorld False ns)
+
+getCounterfactual :: MultiVal a -> a
+getCounterfactual (MultiVal (ns, f)) = f (constWorld True ns)
+
 instance (Show a) => Show (MultiVal a) where
   show :: MultiVal a -> String
   show (MultiVal (ns, f)) =
@@ -93,7 +100,6 @@ instance (Ord a) => Ord (MultiVal a) where
          in foldr (\w acc -> if f w == g w then acc else compare (f w) (g w)) EQ relevantWorlds
       ord -> ord
 
--- Definition starts from here.
 instance Functor MultiVal where
   fmap :: (a -> b) -> MultiVal a -> MultiVal b
   fmap f (MultiVal (ns, w)) = MultiVal (ns, f . w)
