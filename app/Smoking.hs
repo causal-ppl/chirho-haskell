@@ -970,19 +970,20 @@ condition (forall i, Xi = xi)
 
 main :: IO ()
 main = do
+  print "[TODO] This example needs cleaning up; please refer to the individual main_X functions to run them."
   --   print "--------------- Smoking Model: \"Observation 1\" ---------------"
   --   main_I -- OK
   -- main_II -- OK
   --   main_III -- OK
-  print "--------------- Smoking Model: \"Observation 2\" ---------------"
+  -- print "--------------- Smoking Model: \"Observation 2\" ---------------"
   --   main_IV_A -- OK
   --   main_IV_B -- OK
   -- main_V_A -- OK
 --   main_V_B -- OK
 --   main_VI_A -- OK
 --   main_VI_B -- OK
-  print "--------------- Smoking Model: \"Observation 3\" ---------------"
-  main_VII -- Everything ok apart from "main task" of inference.
+  -- print "--------------- Smoking Model: \"Observation 3\" ---------------"
+  -- main_VII -- Everything ok apart from "main task" of inference.
 --   let i :: Log Double = 0.1
 --   let j :: Log Double = 0.1
 --   let k = Exp (log (i * j))
