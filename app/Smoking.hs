@@ -859,7 +859,7 @@ main_VII = do
             let factual = table (constWorld False ns)
             forM_ factual $ \feature ->
                 score (scoreOf feature)
-            -- @Dario: WHICH ONE TO DO between the following 2:
+            -- WHICH ONE TO DO between the following 2:
             return samples
             -- getM bayesian_population_counterfactual_model empty
         posteriorATE :: (MonadMeasure m) => InterventionPointKey m Smoke -> m (Double, Double, Double)

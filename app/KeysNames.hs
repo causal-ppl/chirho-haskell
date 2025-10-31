@@ -6,7 +6,7 @@ module KeysNames (main) where
 import Chirho
 import Data.Functor.Identity
 
--- Dario's question on expressiveness losses if we identify keys with names
+-- On expressiveness losses if we identify keys with names
 
 interveneOnSameKeyWithDifferentNames :: Caus m (MultiVal a) -> InterventionPointKey m Int -> Caus m (MultiVal a)
 interveneOnSameKeyWithDifferentNames model key =
