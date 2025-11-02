@@ -75,7 +75,7 @@ We have implemented three sets of examples.
     ```
     This example demonstrates how both can be implemented in ChiRho using subtleties pertaining to how the applicative functor and the monad interact. More details [here](/notes/AliceBob.md). 
 - `keysnames` (in `KeysNames.hs`): contains examples showing why keys and names should be different, and what expressivity gain we obtain by keeping them distinct. In particular, we show why it might be useful to have interventions on the same intervention point and different names, as well as having interventions on different intervention points with the same name. More details [here](/notes/KeysNames.md).
-- `smoking` (in `Smoking.hs`): this is a (currently partial) reproduction of the [ChiRho tutorial](https://basisresearch.github.io/chirho/tutorial_i.html). 
+- `smoking` (in `Smoking.hs`): this is a full reproduction of the [ChiRho tutorial](https://basisresearch.github.io/chirho/tutorial_i.html). **To run this part, please first create a `/output` folder in the root directory of this project!!!!** We replicate all parts of the tutorial and reproduce the graphs/diagrams it would generate in `/output`. As running it takes quite a while, it might be useful advisable to only run parts of the `main` program at a time.
 
 ## Library
 - `ChiRho.hs`: the entry point to the library. This module imports all other modules and specifies the identifiers to be exported.

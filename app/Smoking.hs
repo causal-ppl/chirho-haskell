@@ -842,19 +842,19 @@ vii_c_plot_all prior_ate_estimates true_ate_estimates posterior_ate_estimates = 
 
 main :: IO ()
 main = do
-  -- print "=== Observation 1: causal models are probabilistic programs ==="
-  -- i_observational_data_fixed_parameters
-  -- ii_applying_an_intervention_manually
-  -- iii_transforming_causal_models_using_chirho
-  -- print "=== End of Observation 1 ==="
-  -- print "=== Observation 2: causal uncertainty is probabilistic uncertainty ==="
-  -- iv_a_adding_uncertainty_over_model_parameters
-  -- iv_b_simulating_interventional_data_with_uncertain_parameters
-  -- v_a_adding_uncertainty_over_model_structure
-  -- v_b_intervened_data_alternative_structure
-  -- vi_a_simulating_observational_data_with_uncertain_structure_and_parameters
-  -- vi_b_simulating_interventional_data_with_uncertain_structure_and_parameters
-  -- print "=== End of Observation 2 ==="
+  print "=== Observation 1: causal models are probabilistic programs ==="
+  i_observational_data_fixed_parameters
+  ii_applying_an_intervention_manually
+  iii_transforming_causal_models_using_chirho
+  print "=== End of Observation 1 ==="
+  print "=== Observation 2: causal uncertainty is probabilistic uncertainty ==="
+  iv_a_adding_uncertainty_over_model_parameters
+  iv_b_simulating_interventional_data_with_uncertain_parameters
+  v_a_adding_uncertainty_over_model_structure
+  v_b_intervened_data_alternative_structure
+  vi_a_simulating_observational_data_with_uncertain_structure_and_parameters
+  vi_b_simulating_interventional_data_with_uncertain_structure_and_parameters
+  print "=== End of Observation 2 ==="
   print "=== Observation 3: causal inference is Bayesian inference ==="
   (prior_ate_estimates, true_ate_estimates) <- vii_a_prior_distribution_and_true_ate
   posterior_ate_estimates <- vii_b_infer_ate_est_and_plot
