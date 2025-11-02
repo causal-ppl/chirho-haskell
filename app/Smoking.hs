@@ -17,7 +17,7 @@ import Control.Monad.Trans.Class (lift)
 import Graphics.Matplotlib
 import Control.Monad.Bayes.Enumerator (toEmpiricalWeighted, toEmpirical, enumerateToDistribution, Enumerator, mass)
 import Control.Monad.Bayes.Inference.MCMC
-import Control.Monad.Bayes.Inference.TUI (MCMCData(samples))
+
 
 -- import Graphics.Matplotlib (plot)
 
@@ -131,11 +131,11 @@ visualise_ate nrBins ateEstimates titleString =
     % legend
     % title titleString
 
-main_I :: IO ()
-main_I = do
+i_observational_data_fixed_parameters :: IO ()
+i_observational_data_fixed_parameters = do
   -- To be more pedantic this is not quite what ChiRho does.
   -- we have approx of distr, they have distr of approx's
-  print "=== I- Observational Model ==="
+  print "--- I- Simulating Observational Data with Fixed Parameters ---"
   let nSamples = 10000
   let model smoke_cond = do
         -- MonadInfer
@@ -149,7 +149,7 @@ main_I = do
   print "Estimated P(cancer | not smoking): "
   print smoke_false_avg
   -- Repeat experiments for plotting
-  let filename = "I_smoking_effects.png"
+  let filename = "I_observational_data_fixed_parameters.png"
   print ("Plotting Smoking Effects and saving in " ++ filename)
   let nExperiments = 500
   results <- replicateM nExperiments $ do
@@ -159,7 +159,7 @@ main_I = do
     return (smoke_true, smoke_false)
   let (smoke_trues, smoke_falses) = unzip results
   -- Matplotlib make plot
-  result <- file ("output/" ++ filename) $ visualise_smoking_effects 10 smoke_trues smoke_falses ("Smoking Effects on Cancer Probability" ++ " (n=" ++ show nExperiments ++ ")")
+  result <- file ("output/" ++ filename) $ visualise_smoking_effects 10 smoke_trues smoke_falses ("Observational Data - Fixed Parameters" ++ " (n=" ++ show nExperiments ++ ")")
   print result
 
 {- Applying an intervention -}
@@ -175,9 +175,9 @@ intervened_stat_model (stress_prob, smokes_cond_prob, cancer_cond_prob) smoke_in
   cancer <- cancer_cond_prob stress smoke
   return (stress, smoke, cancer)
 
-main_II :: IO ()
-main_II = do
-  print "=== II- Manually Intervened Model ==="
+ii_applying_an_intervention_manually :: IO ()
+ii_applying_an_intervention_manually = do
+  print "--- II- Applying an intervention (manually)  ---"
   -- Directly estimate the average using MonadBayes inference.
   let model intv = do
         -- MonadInfer
@@ -203,7 +203,7 @@ main_II = do
     return (smoke_true, smoke_false)
   let (smoke_trues, smoke_falses) = unzip results
   -- Matplotlib make plot
-  pltResult1 <- file ("output/" ++ filename) $ visualise_smoking_effects 10 smoke_trues smoke_falses ("Smoking Effects on Cancer Probability under Intervention" ++ " (n=" ++ show nExperiments ++ ")")
+  pltResult1 <- file ("output/" ++ filename) $ visualise_smoking_effects 10 smoke_trues smoke_falses ("Intervened Data - Fixed Parameters" ++ " (n=" ++ show nExperiments ++ ")")
   print pltResult1
   -- Compute ATE which is E[Phat(cancer | do(smoking))] - E[Phat(cancer | do(not smoking))]
   -- Mathematically correct value: ATE = 0.05
@@ -212,6 +212,7 @@ main_II = do
   pltResult2 <- file "output/II_ate_estimate.png" $ visualise_ate 10 ate_estimate "Estimated ATE Distribution over Population"
 
   print pltResult2
+
 
 {- Transforming Causal Models using ChiRho -}
 
@@ -238,10 +239,10 @@ causal_model_intervened params smoke_int {--} smoke_key =
   let model = causal_model params {--} smoke_key
    in do_ smoke_key (Value smoke_int) "smoke_int" model
 
-main_III :: IO ()
-main_III = do
+iii_transforming_causal_models_using_chirho :: IO ()
+iii_transforming_causal_models_using_chirho = do
   -- IO
-  print "=== III- Causal Model intervened automatically with ChiRho do_ ==="
+  print "--- III- Transforming Causal Models using ChiRho do_ ---"
   smoke_key <- createKey
   let nSamples = 10000
   let model intv =
@@ -262,8 +263,8 @@ main_III = do
   print false_avg
   print "This should match the results from section II."
 
-{- Priors over parameters -}
 
+{- Priors over parameters -}
 parameter_prior_enumerator ::
   (MonadDistribution m) =>
   m (Param (Enumerator))
@@ -299,20 +300,6 @@ parameter_prior = fmap param_enum_to_m parameter_prior_enumerator
 
 {- Causal Model over Population -}
 
--- Empirical observations
-
--- [Theo] where do these scores come from?
-
-scores :: (Stress, Smoke, Cancer) -> Double
-scores (Stress True, Smoke True, Cancer True) = 0.05
-scores (Stress True, Smoke True, Cancer False) = 0.2
-scores (Stress True, Smoke False, Cancer True) = 0.05
-scores (Stress True, Smoke False, Cancer False) = 0.2
-scores (Stress False, Smoke True, Cancer True) = 0.05
-scores (Stress False, Smoke True, Cancer False) = 0.2
-scores (Stress False, Smoke False, Cancer True) = 0.05
-scores (Stress False, Smoke False, Cancer False) = 0.2
-
 causal_population_model ::
   (MonadDistribution m) =>
   Param m ->
@@ -333,10 +320,10 @@ bayesian_population_model n_individuals {--} smoke_key = do
   params <- lift parameter_prior
   causal_population_model params n_individuals smoke_key
 
-main_IV_A :: IO ()
-main_IV_A = do
+iv_a_adding_uncertainty_over_model_parameters :: IO ()
+iv_a_adding_uncertainty_over_model_parameters = do
   -- IO
-  print "=== IV-A: Observational Data with (Bayesian) Uncertain Parameters ==="
+  print "--- IV-A: Adding Uncertainty over Model Parameters ---"
   smoke_key <- createKey
   let model = bayesian_population_model 100 smoke_key
   let dist_model = getM model empty
@@ -359,10 +346,10 @@ main_IV_A = do
   let (smoke_trues, smoke_falses) = unzip results
   let smoke_trues_trunc = map (\x -> if x < 1e-4 || isNaN x then 0 else x) smoke_trues
   let smoke_falses_trunc = map (\x -> if x < 1e-4 || isNaN x then 0 else x) smoke_falses
-  let filename = "IV_A_smoking_effects_bayesian.png"
+  let filename = "IV_A_observational_data_uncertain_parameters.png"
   print ("Plotting Smoking Effects under Bayesian Prior and saving in " ++ filename)
   -- Matplotlib make plot
-  let plt = visualise_smoking_effects 25 smoke_trues_trunc smoke_falses_trunc ("Smoking Effects on Cancer Probability under Bayesian Prior" ++ " (n=" ++ show nExperiments ++ ")")
+  let plt = visualise_smoking_effects 25 smoke_trues_trunc smoke_falses_trunc ("Observational Data - Uncertain Parameters" ++ " (n=" ++ show nExperiments ++ ")")
   pltResult <- file ("output/" ++ filename) $ plt
   print pltResult
 
@@ -389,10 +376,10 @@ intervened_bayesian_population_model n_individuals {--} smoke_key = do
   params <- lift parameter_prior
   intervened_causal_population_model params n_individuals smoke_key
 
-main_IV_B :: IO ()
-main_IV_B = do
+iv_b_simulating_interventional_data_with_uncertain_parameters :: IO ()
+iv_b_simulating_interventional_data_with_uncertain_parameters = do
   -- IO
-  print "=== IV-B: Intervened Data with (Bayesian) Uncertain Parameters ==="
+  print "--- IV-B: Simulating Interventional Data with Uncertain Parameters ---"
   smoke_key <- createKey
   let nIndividuals = 100
   let model = intervened_bayesian_population_model nIndividuals smoke_key
@@ -418,16 +405,16 @@ main_IV_B = do
   let (smoke_trues, smoke_falses, ate_estimates) = unzip3 resultsFiltered
   -- let smoke_trues_trunc = map (\x -> if x < 1e-4 || isNaN x then 0 else x) smoke_trues
   -- let smoke_falses_trunc = map (\x -> if x < 1e-4 || isNaN x then 0 else x) smoke_falses
-  let filename = "IV_B_smoking_effects_bayesian_intervened.png"
+  let filename = "IV_B_interventional_data_uncertain_parameters.png"
   print ("Plotting Smoking Effects *after intervention* under Bayesian Prior and saving in " ++ filename)
   -- Matplotlib make plot
-  let plt = visualise_smoking_effects 25 smoke_trues smoke_falses ("Smoking Intervention Effects on Cancer Probability under Bayesian Prior" ++ " (n=" ++ show nExperiments ++ ")")
+  let plt = visualise_smoking_effects 25 smoke_trues smoke_falses ("Interventional Data - Uncertain Parameters" ++ " (n=" ++ show nExperiments ++ ")")
   pltResult <- file ("output/" ++ filename) plt
   print pltResult
   -- Compute ATE
-  let filename2 = "IV_B_ate_estimate.png"
+  let filename2 = "IV_B_ate_interventional_data_uncertain_parameters.png"
   print ("Plotting ATE estimates and saving in " ++ filename2)
-  let plt2 = visualise_ate 25 ate_estimates "Interventional Data - Uncertain Parameters"
+  let plt2 = visualise_ate 25 ate_estimates "ATE: Interventional Data - Uncertain Parameters"
   pltResult2 <- file ("output/" ++ filename2) plt2
   print pltResult2
 
@@ -502,10 +489,10 @@ alt_bayesian_population_model n_individuals {--} smoke_key = do
   params <- lift alt_parameter_prior
   alt_population_model params n_individuals smoke_key
 
-main_V_A :: IO ()
-main_V_A = do
+v_a_adding_uncertainty_over_model_structure :: IO ()
+v_a_adding_uncertainty_over_model_structure = do
   -- IO
-  print "=== V-A: Alt Causal Structure: Observational Data with (Bayesian) Uncertain Parameters ==="
+  print "--- V-A: Adding Uncertainty over Model Structure ---"
   smoke_key <- createKey
   let model = alt_bayesian_population_model 100 smoke_key
   let dist_model = getM model empty
@@ -528,12 +515,13 @@ main_V_A = do
   let (smoke_trues, smoke_falses) = unzip results
   let smoke_trues_trunc = map (\x -> if x < 1e-4 || isNaN x then 0 else x) smoke_trues
   let smoke_falses_trunc = map (\x -> if x < 1e-4 || isNaN x then 0 else x) smoke_falses
-  let filename = "V_A_alt_smoking_effects_bayesian.png"
+  let filename = "V_A_alt_observational_data_uncertain_parameters_alternative_structure.png"
   print ("Plotting Smoking Effects under Bayesian Prior and saving in " ++ filename)
   -- Matplotlib make plot
-  let plt = visualise_smoking_effects 25 smoke_trues_trunc smoke_falses_trunc ("Alt Causal Structure: Smoking Effects on Cancer Probability under Bayesian Prior" ++ " (n=" ++ show nExperiments ++ ")")
+  let plt = visualise_smoking_effects 25 smoke_trues_trunc smoke_falses_trunc ("Observational Data - Uncertain Parameters - Alternative Structure" ++ " (n=" ++ show nExperiments ++ ")")
   pltResult <- file ("output/" ++ filename) plt
   print pltResult
+
 
 alt_intervened_causal_model ::
   (MonadDistribution m) =>
@@ -587,10 +575,10 @@ alt_intervened_bayesian_population_model n_individuals smoke_key = do
 --   let combined = (++) <$> true_list <*> false_list
 --   return combined
 
-main_V_B :: IO ()
-main_V_B = do
+v_b_intervened_data_alternative_structure :: IO ()
+v_b_intervened_data_alternative_structure = do
   -- IO
-  print "=== V-B: Intervened Data with (Bayesian) Uncertain Parameters ==="
+  print "--- V-B: Intervened Data with (Bayesian) Uncertain Parameters ---"
   smoke_key <- createKey
   let nIndividuals = 1000
   let model = alt_intervened_bayesian_population_model nIndividuals smoke_key
@@ -619,15 +607,16 @@ main_V_B = do
   let filename = "V_B_alt_smoking_effects_bayesian_intervened.png"
   print ("Plotting Smoking Effects *after intervention* under Bayesian Prior and saving in " ++ filename)
   -- Matplotlib make plot
-  let plt = visualise_smoking_effects 25 smoke_trues smoke_falses ("Alt Structure Smoking Intervention Effects on Cancer Probability under Bayesian Prior" ++ " (n=" ++ show nExperiments ++ ")")
+  let plt = visualise_smoking_effects 25 smoke_trues smoke_falses ("Interventional Data - Uncertain Parameters - Alternative Structure" ++ " (n=" ++ show nExperiments ++ ")")
   pltResult <- file ("output/" ++ filename) plt
   print pltResult
   -- Compute ATE
   let filename2 = "V_B_alt_ate_estimate.png"
   print ("Plotting ATE estimates and saving in " ++ filename2)
-  let plt2 = visualise_ate 25 ate_estimates "Interventional Data - Uncertain Parameters - Alternative structure"
+  let plt2 = visualise_ate 25 ate_estimates "ATE: Interventional Data - Uncertain Parameters - Alternative Structure"
   pltResult2 <- file ("output/" ++ filename2) plt2
   print pltResult2
+
 
 population_causal_model_uncertain_structure ::
   (MonadDistribution m) =>
@@ -654,28 +643,14 @@ bayesian_population_causal_model_uncertain_structure ::
   Caus m (MultiVal [(Stress, Smoke, Cancer)])
 bayesian_population_causal_model_uncertain_structure n_individuals {--} smoke_key = do
   -- Caus
---   result <- bayesian_population_model n_individuals smoke_key
---   alt_result <- alt_bayesian_population_model n_individuals smoke_key
---   -- Here we could do model averaging based on model evidence
---   -- Not sure this is the right thing btw need to check.
--- --   is_original_model <- sample (pure $ replicateM n_individuals (bernoulli 0.5))
--- --   -- Combine them.
--- --   let branchWiseComputation isOriginalModel res altRes =
--- --         let zipped = zip3 isOriginalModel res altRes in
--- --         [ if isOrig then r else ar
--- --           | (isOrig, r, ar) <- zipped
--- --         ]
--- --   let combinedResults = branchWiseComputation <$> is_original_model <*> result <*> alt_result
--- --   let combinedResults = branchWiseComputation <$> is_original_model <*> result <*> alt_result
---   return alt_result
     params <- lift parameter_prior
     alt_params <- lift alt_parameter_prior
     population_causal_model_uncertain_structure params alt_params n_individuals smoke_key
 
-main_VI_A :: IO ()
-main_VI_A = do
+vi_a_simulating_observational_data_with_uncertain_structure_and_parameters :: IO ()
+vi_a_simulating_observational_data_with_uncertain_structure_and_parameters = do
   -- IO
-  print "=== VI-A: Alt Causal Structure: Observational Data with (Bayesian) Uncertain Structure AND Parameters ==="
+  print "--- VI-A: Simulating Observational Data with Uncertain Structure *and* Parameters ---"
   smoke_key <- createKey
   let model = bayesian_population_causal_model_uncertain_structure 100 smoke_key
   let dist_model = getM model empty
@@ -698,10 +673,10 @@ main_VI_A = do
   let (smoke_trues, smoke_falses) = unzip results
   let smoke_trues_trunc = map (\x -> if x < 1e-4 || isNaN x then 0 else x) smoke_trues
   let smoke_falses_trunc = map (\x -> if x < 1e-4 || isNaN x then 0 else x) smoke_falses
-  let filename = "VI_A_smoking_effects_observational_uncertain_structure_and_params.png"
+  let filename = "VI_A_observational_data_uncertain_structure_and_parameters.png"
   print ("Plotting Smoking Effects under Bayesian Params and Uncertain Structure and saving in " ++ filename)
   -- Matplotlib make plot
-  let plt = visualise_smoking_effects 25 smoke_trues_trunc smoke_falses_trunc ("Smoking Effects on Cancer Probability under Bayesian Prior + Uncertain Structure" ++ " (n=" ++ show nExperiments ++ ")")
+  let plt = visualise_smoking_effects 25 smoke_trues_trunc smoke_falses_trunc ("Observational Data - Uncertain Parameters and Structure" ++ " (n=" ++ show nExperiments ++ ")")
   pltResult <- file ("output/" ++ filename) plt
   print pltResult
 
@@ -726,9 +701,9 @@ bayesian_intervened_causal_model_uncertain_structure n_individuals smoke_key =  
             return combinedList
     combinedModel
 
-main_VI_B :: IO ()
-main_VI_B = do -- IO
-  print "=== VI-B: Intervened Data with (Bayesian) Uncertain Parameters and Uncertain Structure ==="
+vi_b_simulating_interventional_data_with_uncertain_structure_and_parameters :: IO ()
+vi_b_simulating_interventional_data_with_uncertain_structure_and_parameters = do -- IO
+  print "--- VI-B: Simulating Interventional Data with Uncertain Structure and Parameters ---"
   smoke_key <- createKey
   let nIndividuals = 1000
   let model = bayesian_intervened_causal_model_uncertain_structure nIndividuals smoke_key
@@ -755,36 +730,24 @@ main_VI_B = do -- IO
   let (smoke_trues, smoke_falses, ate_estimates) = unzip3 resultsFiltered
   -- let smoke_trues_trunc = map (\x -> if x < 1e-4 || isNaN x then 0 else x) smoke_trues
   -- let smoke_falses_trunc = map (\x -> if x < 1e-4 || isNaN x then 0 else x) smoke_falses
-  let filename = "VI_B_smoking_effects_uncertain_structure_and_params_intervened.png"
+  let filename = "VI_B_interventional_data_uncertain_parameters_and_structure.png"
   print ("Plotting Smoking Effects *after intervention* under Bayesian Prior and Uncertain Structure and saving in " ++ filename)
   -- Matplotlib make plot
-  let plt = visualise_smoking_effects 25 smoke_trues smoke_falses ("Uncertain Structure and Parameters: Smoking Intervention Effects on Cancer Probability" ++ " (n=" ++ show nExperiments ++ ")")
+  let plt = visualise_smoking_effects 25 smoke_trues smoke_falses ("Interventional Data - Uncertain Parameters and Structure" ++ " (n=" ++ show nExperiments ++ ")")
   pltResult <- file ("output/" ++ filename) plt
   print pltResult
   -- Compute ATE
   let filename2 = "VI_B_ate_estimate_uncertain_structure.png"
   print ("Plotting ATE estimates and saving in " ++ filename2)
-  let plt2 = visualise_ate 500 ate_estimates "Interventional Data - Uncertain Parameters - Uncertain structure"
+  let plt2 = visualise_ate 500 ate_estimates "ATE: Interventional Data - Uncertain Parameters - Uncertain structure"
   pltResult2 <- file ("output/" ++ filename2) plt2
   print pltResult2
 
 -- Final part: "Causal Inference is Bayesian Inference"
--- main_VII
-
-
-scoreOf :: (Stress, Smoke, Cancer) -> Log Double
-scoreOf (Stress True, Smoke True, Cancer True) = (0.5 * 0.6 * 0.9)
-scoreOf (Stress True, Smoke True, Cancer False) = (0.5 * 0.6 * 0.1)
-scoreOf (Stress True, Smoke False, Cancer True) =  (0.5 * 0.4 * 0.1)
-scoreOf (Stress True, Smoke False, Cancer False) =  (0.5 * 0.4 * 0.9)
-scoreOf (Stress False, Smoke True, Cancer True) =  (0.5 * 0.3 * 0.3)
-scoreOf (Stress False, Smoke True, Cancer False) =  (0.5 * 0.3 * 0.7)
-scoreOf (Stress False, Smoke False, Cancer True) =  (0.5 * 0.7 * 0.1)
-scoreOf (Stress False, Smoke False, Cancer False) = (0.5 * 0.7 * 0.9)
 
 
 likelihood_ :: Param Enumerator -> (Stress, Smoke, Cancer) -> Log Double
-likelihood_ params individual@(s, sm, c) =
+likelihood_ params individual =
       let l = mass (stat_model params) individual in
         -- convert l to logdouble
          Exp (log l)
@@ -800,9 +763,10 @@ parameter_posterior_enumerator data_obs = do
     score $ likelihood_ params individual
   return params
 
-main_VII_2 :: IO ()
-main_VII_2 = do
-  let n_individuals = 100
+vii_b_infer_ate_est_and_plot :: IO [Double]
+vii_b_infer_ate_est_and_plot = do
+  print "--- VII-B: Infer ATE Estimate and Plot Posterior Distribution ---"
+  let n_individuals = 500
   -- Generate "data"
   smoke_key <- createKey
   let model = causal_population_model data_params n_individuals smoke_key
@@ -810,38 +774,26 @@ main_VII_2 = do
   individuals <- sampleIO dist_model
   let (ns, table) = getMultiVal individuals
   let observational = table (constWorld False ns)
-  -- 
+  -- Estimate posterior
   print "Estimating Posterior Distribution"
   smoke_key2 <- createKey
   samples_ <- sampler $ mcmc MCMCConfig
-                {numMCMCSteps = 20000,
+                {numMCMCSteps = 10000,
                 proposal = SingleSiteMH,
-                numBurnIn = 10000} $ posteriorATE n_individuals observational smoke_key2
+                numBurnIn = 500} $ posteriorATE n_individuals observational smoke_key2
   let (smokeTrues, smokeFalses, ateEstimates) = unzip3 samples_
-  let filename = "VII_ate_estimates_causal_inference_is_bayesian.png"
+  let filename = "VII_interventional_data_posterior.png"
   print ("Plotting ATE estimates and saving in " ++ filename)
-  let plt = visualise_smoking_effects 10 smokeTrues smokeFalses "Causal Inference is Bayesian Inference"
+  let plt = visualise_smoking_effects 10 smokeTrues smokeFalses "Interventional Data - Posterior Estimates"
   pltResult <- file ("output/" ++ filename) plt
   print pltResult
-  let plt2 = visualise_ate 10 ateEstimates "Causal Inference is Bayesian Inference"
-  let filename2 = "VII_ate_estimates_causal_inference_is_bayesian_ate.png"
+  let plt2 = visualise_ate 10 ateEstimates "Interventional Data - Posterior ATE Estimates"
+  let filename2 = "VII_ate_interventional_data_posterior.png"
   print ("Plotting ATE estimates and saving in " ++ filename2)
   pltResult2 <- file ("output/" ++ filename2) plt2
   print pltResult2
-  print "done"
+  return ateEstimates
   where
-        priorATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
-        priorATE smoke_key = do
-            results <- getM (intervened_bayesian_population_model 1000 smoke_key) empty
-            let (ns, table) = getMultiVal results
-            let interventional = table (constWorld True ns)
-            return $ ate interventional
-        trueATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
-        trueATE smoke_key = do
-            individuals <- getM (intervened_causal_population_model data_params 1000 smoke_key) empty
-            let (ns, table) = getMultiVal individuals
-            let interventional = table (constWorld True ns)
-            return $ ate interventional
         posteriorPredDistributionReference :: (MonadMeasure m) => Int -> [(Stress, Smoke, Cancer)] -> InterventionPointKey m Smoke -> m (MultiVal [(Stress, Smoke, Cancer)])
         posteriorPredDistributionReference n_individuals data_ smoke_key = do
             param <- parameter_prior_enumerator
@@ -871,6 +823,74 @@ main_VII_2 = do
                     fromIntegral notSmokingAndCancer / fromIntegral (length interventional - smokes),
                     ate interventional)
 
+
+vii_a_prior_distribution_and_true_ate :: IO ([Double], [Double])
+vii_a_prior_distribution_and_true_ate = do
+  print "VII-A: Prior Distribution and True ATE"
+  smoke_key_prior <- createKey
+  smoke_key_true <- createKey
+  -- Results
+  print "Sampling Prior Distribution"
+  let n_experiments_prior = 5000
+  results_prior <- replicateM n_experiments_prior (sampleIO (priorATE smoke_key_prior))
+  let prior_ATE_estimates = filter (not . isNaN) results_prior
+  print "Sampling True Distribution"
+  let n_experiments_true = 5000
+  results_true <- replicateM n_experiments_true (sampleIO (trueATE smoke_key_true))
+  let true_ATE_estimates = filter (not . isNaN) results_true
+  return (prior_ATE_estimates, true_ATE_estimates)
+  where 
+        priorATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
+        priorATE smoke_key = do
+            results <- getM (intervened_bayesian_population_model 1000 smoke_key) empty
+            let (ns, table) = getMultiVal results
+            let interventional = table (constWorld True ns)
+            return $ ate interventional
+        trueATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
+        trueATE smoke_key = do
+            individuals <- getM (intervened_causal_population_model data_params 1000 smoke_key) empty
+            let (ns, table) = getMultiVal individuals
+            let interventional = table (constWorld True ns)
+            return $ ate interventional
+
+
+vii_c_plot_all :: [Double] -> [Double] -> [Double] -> IO ()
+vii_c_plot_all prior_ate_estimates true_ate_estimates posterior_ate_estimates = do
+  print "--- VII-C: Plot All ATE Distributions: Prior, Posterior and True ---"
+  let nrBins :: Int = 10
+  let filename = "VII_ate_prior_true_posterior.png"
+  let plt = mp
+          % histogram prior_ate_estimates nrBins @@ [o2 "density" True, o2 "histtype" "stepfilled", o2 "alpha" (0.8 :: Double), o2 "label" "Prior ATE"]
+          % histogram posterior_ate_estimates nrBins @@ [o2 "density" True, o2 "histtype" "stepfilled", o2 "alpha" (0.8 :: Double), o2 "label" "Posterior ATE"]
+          % histogram true_ate_estimates nrBins @@ [o2 "density" True, o2 "histtype" "stepfilled", o2 "alpha" (0.3 :: Double), o2 "label" "True ATE"]
+          % xlabel "Average Treatment Effect (ATE)"
+          % ylabel "Density"
+          % legend
+          % title "ATE: prior, posterior and true distributions"
+  pltResult <- file ("output/" ++ filename) plt
+  print pltResult
+
+
+main :: IO ()
+main = do
+  -- print "=== Observation 1: causal models are probabilistic programs ==="
+  -- i_observational_data_fixed_parameters
+  -- ii_applying_an_intervention_manually
+  -- iii_transforming_causal_models_using_chirho
+  -- print "=== End of Observation 1 ==="
+  -- print "=== Observation 2: causal uncertainty is probabilistic uncertainty ==="
+  -- iv_a_adding_uncertainty_over_model_parameters
+  -- iv_b_simulating_interventional_data_with_uncertain_parameters
+  -- v_a_adding_uncertainty_over_model_structure
+  -- v_b_intervened_data_alternative_structure
+  -- vi_a_simulating_observational_data_with_uncertain_structure_and_parameters
+  -- vi_b_simulating_interventional_data_with_uncertain_structure_and_parameters
+  -- print "=== End of Observation 2 ==="
+  print "=== Observation 3: causal inference is Bayesian inference ==="
+  (prior_ate_estimates, true_ate_estimates) <- vii_a_prior_distribution_and_true_ate
+  posterior_ate_estimates <- vii_b_infer_ate_est_and_plot
+  vii_c_plot_all prior_ate_estimates true_ate_estimates posterior_ate_estimates
+  print "=== End of Observation 3 ==="
 
 
 -- main_VII = do
@@ -986,47 +1006,47 @@ main_VII_2 = do
 --         return _
 --   return _
 
-main_IV :: IO ()
-main_IV = do
-  -- IO
-  smoke_key <- createKey
-  let model = do_ smoke_key (Value (Smoke True)) "smoking" (causal_population_model default_params 100 smoke_key)
-  let dist_model = getM model empty
-  let infer_model branch = do
-        -- m
-        individuals <- dist_model
-        let (ns, table) = getMultiVal individuals
-        let features = table (constWorld branch ns)
-        return (ate features)
-  avg_ate_real <- inferAvg 10000 (infer_model False)
-  print "ATE (observed): "
-  print avg_ate_real
-  avg_ate_cf <- inferAvg 10000 (infer_model True)
-  print "ATE (counterfactual): "
-  print avg_ate_cf
+-- main_IV :: IO ()
+-- main_IV = do
+--   -- IO
+--   smoke_key <- createKey
+--   let model = do_ smoke_key (Value (Smoke True)) "smoking" (causal_population_model default_params 100 smoke_key)
+--   let dist_model = getM model empty
+--   let infer_model branch = do
+--         -- m
+--         individuals <- dist_model
+--         let (ns, table) = getMultiVal individuals
+--         let features = table (constWorld branch ns)
+--         return (ate features)
+--   avg_ate_real <- inferAvg 10000 (infer_model False)
+--   print "ATE (observed): "
+--   print avg_ate_real
+--   avg_ate_cf <- inferAvg 10000 (infer_model True)
+--   print "ATE (counterfactual): "
+--   print avg_ate_cf
 
-main_V :: IO ()
-main_V = do
-  -- IO
-  smoke_key <- createKey
---   let model = do_ smoke_key (Value (Smoke True)) "smoking" (bayesian_population_model 100 smoke_key)
-  let model = intervened_bayesian_population_model 1000 smoke_key
-  let dist_model = getM model empty
-  let infer_model = do
-        -- m
-        individuals <- dist_model
-        let (ns, table) = getMultiVal individuals
-        let real_features = table (constWorld False ns)
-        let cf_features = table (constWorld True ns)
-        forM_ real_features $ \feature ->
-        --   score (Exp (log (scores feature)))
-            score (scoreOf feature)
-        individuals2 <- dist_model
-        let (ns2, table2) = getMultiVal individuals2
-        return (ate $ table2 (constWorld True ns2))
-  avg_ate_bayesian <- inferAvg 10000 infer_model
-  print "ATE (counterfactual, bayesian):"
-  print avg_ate_bayesian
+-- main_V :: IO ()
+-- main_V = do
+--   -- IO
+--   smoke_key <- createKey
+-- --   let model = do_ smoke_key (Value (Smoke True)) "smoking" (bayesian_population_model 100 smoke_key)
+--   let model = intervened_bayesian_population_model 1000 smoke_key
+--   let dist_model = getM model empty
+--   let infer_model = do
+--         -- m
+--         individuals <- dist_model
+--         let (ns, table) = getMultiVal individuals
+--         let real_features = table (constWorld False ns)
+--         let cf_features = table (constWorld True ns)
+--         forM_ real_features $ \feature ->
+--         --   score (Exp (log (scores feature)))
+--             score (scoreOf feature)
+--         individuals2 <- dist_model
+--         let (ns2, table2) = getMultiVal individuals2
+--         return (ate $ table2 (constWorld True ns2))
+--   avg_ate_bayesian <- inferAvg 10000 infer_model
+--   print "ATE (counterfactual, bayesian):"
+--   print avg_ate_bayesian
 
 {-
 High level:
@@ -1068,9 +1088,9 @@ forall p : X -> [0,1] discrete distribution
 condition (forall i, Xi = xi)
 -}
 
-main :: IO ()
-main = do
-  print "[TODO] This example needs cleaning up; please refer to the individual main_X functions to run them."
+-- main :: IO ()
+-- main = do
+--   print "[TODO] This example needs cleaning up; please refer to the individual main_X functions to run them."
   --   print "--------------- Smoking Model: \"Observation 1\" ---------------"
   --   main_I -- OK
   -- main_II -- OK
@@ -1090,6 +1110,6 @@ main = do
 --   print $ i * j
 --   print k
 --   print $ exp $ ln (i * j)
-  main_VII_2
+  -- main_VII_2
   -- main_IV -- not sure but looks ok
   -- main_V --  weird unless it's expected.
