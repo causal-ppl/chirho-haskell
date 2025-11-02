@@ -19,8 +19,6 @@ import Control.Monad.Bayes.Enumerator (toEmpiricalWeighted, toEmpirical, enumera
 import Control.Monad.Bayes.Inference.MCMC
 
 
--- import Graphics.Matplotlib (plot)
-
 {- MonadBayes helpers -}
 
 inferAvg :: Int -> WeightedT Sampler Double -> IO Double
@@ -35,18 +33,6 @@ inferAvg nSamples model = do
 {-
 Causal probabilistic programming without tears
     https://basisresearch.github.io/chirho/tutorial_i.html
-
-I) Write model with fixed parameters (distributions/kernels) -> Forward execution.
-   Manually intervene -> Forward execution
-
-II) Use `do` to intervene automatically -> Forward execution (same as I)
-
-III) Put bayesian prior over parameters
-     -> Condition on some observations
-     -> Infer parameters (causal inference)
-
-IV*) Put bayesian prior over models (causal structures)
-     -> Infer which causal structures we use
 -}
 
 {- Observation 1: causal models are probabilistic programs -}
@@ -263,6 +249,7 @@ iii_transforming_causal_models_using_chirho = do
   print false_avg
   print "This should match the results from section II."
 
+{- Observation 2: causal uncertainty is probabilistic uncertainty -}
 
 {- Priors over parameters -}
 parameter_prior_enumerator ::
@@ -555,25 +542,6 @@ alt_intervened_bayesian_population_model n_individuals smoke_key = do
   params <- lift alt_parameter_prior
   alt_intervened_causal_population_model params n_individuals smoke_key
 
-  -- Testing alternative way of constructing the same model???? [WORKED]
---   let model = alt_causal_model params smoke_key
---   let replicated_model = sequenceA <$> replicateM (n_individuals `div` 2) model
---   let true_model = do_ smoke_key (Value (Smoke True)) "smoke_int" replicated_model
---   let false_model = do_ smoke_key (Value (Smoke False)) "smoke_int" replicated_model
---   let replicated_false_model = sequenceA <$> replicateM (n_individuals `div` 2) false_model
-
--- The following fails: if I put in the "alt_bayesian_population_model" and replicate it is break and gives the wrong answer.
--- Mistake here is that I effectively create a different Parametric Prior for each individual rather than sharing it across the population.
--- In ChiRho this sharing of parametric prior is possible because replicated models have the intervention points replicated too *instead of copied*,
--- so we can intervene on all of them at once while not duplicating the parametric priors.
---   let model = alt_bayesian_population_model (n_individuals `div` 2) smoke_key
---   let true_model = do_ smoke_key (Value (Smoke True)) "smoke_int" model
---   let false_model = do_ smoke_key (Value (Smoke False)) "smoke_int" model
---   Shared code.
---   true_list <- true_model
---   false_list <- false_model
---   let combined = (++) <$> true_list <*> false_list
---   return combined
 
 v_b_intervened_data_alternative_structure :: IO ()
 v_b_intervened_data_alternative_structure = do
@@ -743,8 +711,8 @@ vi_b_simulating_interventional_data_with_uncertain_structure_and_parameters = do
   pltResult2 <- file ("output/" ++ filename2) plt2
   print pltResult2
 
--- Final part: "Causal Inference is Bayesian Inference"
 
+{- Observation 3: Causal Inference is Bayesian Inference -}
 
 likelihood_ :: Param Enumerator -> (Stress, Smoke, Cancer) -> Log Double
 likelihood_ params individual =
@@ -762,6 +730,37 @@ parameter_posterior_enumerator data_obs = do
   forM_ data_obs $ \individual -> do
     score $ likelihood_ params individual
   return params
+
+
+vii_a_prior_distribution_and_true_ate :: IO ([Double], [Double])
+vii_a_prior_distribution_and_true_ate = do
+  print "VII-A: Prior Distribution and True ATE"
+  smoke_key_prior <- createKey
+  smoke_key_true <- createKey
+  -- Results
+  print "Sampling Prior Distribution"
+  let n_experiments_prior = 5000
+  results_prior <- replicateM n_experiments_prior (sampleIO (priorATE smoke_key_prior))
+  let prior_ATE_estimates = filter (not . isNaN) results_prior
+  print "Sampling True Distribution"
+  let n_experiments_true = 5000
+  results_true <- replicateM n_experiments_true (sampleIO (trueATE smoke_key_true))
+  let true_ATE_estimates = filter (not . isNaN) results_true
+  return (prior_ATE_estimates, true_ATE_estimates)
+  where 
+        priorATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
+        priorATE smoke_key = do
+            results <- getM (intervened_bayesian_population_model 1000 smoke_key) empty
+            let (ns, table) = getMultiVal results
+            let interventional = table (constWorld True ns)
+            return $ ate interventional
+        trueATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
+        trueATE smoke_key = do
+            individuals <- getM (intervened_causal_population_model data_params 1000 smoke_key) empty
+            let (ns, table) = getMultiVal individuals
+            let interventional = table (constWorld True ns)
+            return $ ate interventional
+
 
 vii_b_infer_ate_est_and_plot :: IO [Double]
 vii_b_infer_ate_est_and_plot = do
@@ -824,36 +823,6 @@ vii_b_infer_ate_est_and_plot = do
                     ate interventional)
 
 
-vii_a_prior_distribution_and_true_ate :: IO ([Double], [Double])
-vii_a_prior_distribution_and_true_ate = do
-  print "VII-A: Prior Distribution and True ATE"
-  smoke_key_prior <- createKey
-  smoke_key_true <- createKey
-  -- Results
-  print "Sampling Prior Distribution"
-  let n_experiments_prior = 5000
-  results_prior <- replicateM n_experiments_prior (sampleIO (priorATE smoke_key_prior))
-  let prior_ATE_estimates = filter (not . isNaN) results_prior
-  print "Sampling True Distribution"
-  let n_experiments_true = 5000
-  results_true <- replicateM n_experiments_true (sampleIO (trueATE smoke_key_true))
-  let true_ATE_estimates = filter (not . isNaN) results_true
-  return (prior_ATE_estimates, true_ATE_estimates)
-  where 
-        priorATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
-        priorATE smoke_key = do
-            results <- getM (intervened_bayesian_population_model 1000 smoke_key) empty
-            let (ns, table) = getMultiVal results
-            let interventional = table (constWorld True ns)
-            return $ ate interventional
-        trueATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
-        trueATE smoke_key = do
-            individuals <- getM (intervened_causal_population_model data_params 1000 smoke_key) empty
-            let (ns, table) = getMultiVal individuals
-            let interventional = table (constWorld True ns)
-            return $ ate interventional
-
-
 vii_c_plot_all :: [Double] -> [Double] -> [Double] -> IO ()
 vii_c_plot_all prior_ate_estimates true_ate_estimates posterior_ate_estimates = do
   print "--- VII-C: Plot All ATE Distributions: Prior, Posterior and True ---"
@@ -891,225 +860,3 @@ main = do
   posterior_ate_estimates <- vii_b_infer_ate_est_and_plot
   vii_c_plot_all prior_ate_estimates true_ate_estimates posterior_ate_estimates
   print "=== End of Observation 3 ==="
-
-
--- main_VII = do
---     print "=== VII: Causal Inference is Bayesian Inference ==="
---     smoke_key1 <- createKey
---     smoke_key2 <- createKey
---     smoke_key3 <- createKey
---     -- Results
---     -- print "Sampling Prior Distribution"
---     -- let nExperiments1 = 5000
---     -- results1 <- replicateM nExperiments1 (sampleIO (priorATE smoke_key1))
---     -- let prior_ATE_estimates = filter (not . isNaN) results1
---     -- print "Sampling True Distribution"
---     -- let nExperiments3 = 5000
---     -- results3 <- replicateM nExperiments3 (sampleIO (trueATE smoke_key3))
---     -- let true_ATE_estimates = filter (not . isNaN) results3
---     print "Estimating Posterior Distribution"
---     -- let nExperiments2 = 1
---     -- samples <- mh 0.4 $ posteriorATE smoke_key2
---     -- samples <- replicateM nExperiments2 (inferAvg 10000000 (posteriorATE smoke_key2))
---     samples <- sampler $ mcmc MCMCConfig
---                     {numMCMCSteps = 1500,
---                     proposal = SingleSiteMH,
---                     numBurnIn = 500} $ posteriorATE smoke_key2
---     -- samples <- sampler $ weighted $ posteriorATE smoke_key2
---     -- samples <-  sampler $ mh 0.4 (posteriorATE smoke_key2)
---     -- let samplesMean = sum samples / fromIntegral (length samples)
---     -- return samplesMean
---     let (smokeTrues, smokeFalses, ateEstimates) = unzip3 samples
---     -- let ateEstimates2 = (-) <$> smokeTrues <*> smokeFalses
---     -- samples <- replicateM 100 comp
---     -- let estimates = take nExperiments2 $ map (snd . fst) samples
---     -- Plotting
---     let filename = "VII_ate_estimates_causal_inference_is_bayesian.png"
---     print ("Plotting ATE estimates and saving in " ++ filename)
---     -- let nrBins :: Int = 10
---     let plt = visualise_smoking_effects 10 smokeTrues smokeFalses "Causal Inference is Bayesian Inference"
---     pltResult <- file ("output/" ++ filename) plt
---     print pltResult
---     let plt2 = visualise_ate 10 ateEstimates "Causal Inference is Bayesian Inference"
---     let filename2 = "VII_ate_estimates_causal_inference_is_bayesian_ate.png"
---     print ("Plotting ATE estimates and saving in " ++ filename2)
---     pltResult2 <- file ("output/" ++ filename2) plt2
---     print pltResult2
---     -- let plt3 = visualise_ate nrBins ateEstimates2 "Causal Inference is Bayesian Inference"
---     -- let filename3 = "VII_ate_estimates_causal_inference_is_bayesian_ate_2.png"
---     -- print ("Plotting ATE estimates and saving in " ++ filename3)
---     -- pltResult3 <- file ("output/" ++ filename3) plt3
---     -- print pltResult3
---     -- let plt = mp
---     --         -- % histogram prior_ATE_estimates nrBins @@ [o2 "density" True, o2 "histtype" "stepfilled", o2 "alpha" (0.8 :: Double), o2 "label" "Prior ATE"]
---     --         % histogram samples nrBins @@ [o2 "density" True, o2 "histtype" "stepfilled", o2 "alpha" (0.8 :: Double), o2 "label" "Posterior ATE"]
---     --         -- % histogram true_ATE_estimates nrBins @@ [o2 "density" True, o2 "histtype" "stepfilled", o2 "alpha" (0.3 :: Double), o2 "label" "True ATE"]
---     --         % xlabel "Average Treatment Effect (ATE)"
---     --         % ylabel "Density"
---     --         % legend
---     --         % title "ATE: prior, posterior and true distributions"
---     -- pltResult <- file ("output/" ++ filename) plt
---     -- print pltResult
---     where
---         priorATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
---         priorATE smoke_key = do
---             results <- getM (intervened_bayesian_population_model 1000 smoke_key) empty
---             let (ns, table) = getMultiVal results
---             let interventional = table (constWorld True ns)
---             return $ ate interventional
---         trueATE :: (MonadDistribution m) => InterventionPointKey m Smoke -> m Double
---         trueATE smoke_key = do
---             individuals <- getM (intervened_causal_population_model data_params 1000 smoke_key) empty
---             let (ns, table) = getMultiVal individuals
---             let interventional = table (constWorld True ns)
---             return $ ate interventional
---         posteriorPredDistributionReference :: (MonadMeasure m) => Int -> [(Stress, Smoke, Cancer)] -> InterventionPointKey m Smoke -> m (MultiVal [(Stress, Smoke, Cancer)])
---         posteriorPredDistributionReference n_individuals data_ smoke_key = do
---             param <- parameter_prior_enumerator
---             let param_m = param_enum_to_m param
---             let model = intervened_causal_population_model param_m n_individuals smoke_key
---             val <- run model
---             let (ns, table) = getMultiVal val
---             let observational = table (constWorld False ns)
---             condition (observational == data_)
---             run model
---         posteriorPredDistribution :: (MonadMeasure m) => Int -> [(Stress, Smoke, Cancer)] -> InterventionPointKey m Smoke -> m (MultiVal [(Stress, Smoke, Cancer)])
---         posteriorPredDistribution n_individuals data_ smoke_key = do
---             param <- parameter_posterior_enumerator data_
---             let param_m = param_enum_to_m param
---             let model = intervened_causal_population_model param_m n_individuals smoke_key
---             run model
---         posteriorATE :: (MonadMeasure m) =>  Int -> [(Stress, Smoke, Cancer)] -> InterventionPointKey m Smoke -> m (Double, Double, Double)
---         posteriorATE n_individuals data_ smoke_key = do
---             individuals <- posteriorPredDistribution n_individuals data_ smoke_key
---             let (ns, table) = getMultiVal individuals
---             let interventional = table (constWorld True ns)
---             let smokingAndCancer = length [() | (_, Smoke smoke, Cancer cancer) <- interventional, smoke == True && cancer == True]
---             let notSmokingAndCancer = length [() | (_, Smoke smoke, Cancer cancer) <- interventional, smoke == False && cancer == True]
---             let smokes = length [() | (_, Smoke smoke, _) <- interventional, smoke == True]
---             return
---                 ( fromIntegral smokingAndCancer / fromIntegral smokes,
---                     fromIntegral notSmokingAndCancer / fromIntegral (length interventional - smokes),
---                     ate interventional)
-
-
-
-
--- main_VII_B :: IO ()
--- main_VII_B = do
---   -- IO
---   smoke_key <- createKey
---   -- parameterised model
---   let model = do
---         param <- lift parameter_prior
---         origModel <- causal_model_intervened param (Smoke True) smoke_key
---         return _
---   return _
-
--- main_IV :: IO ()
--- main_IV = do
---   -- IO
---   smoke_key <- createKey
---   let model = do_ smoke_key (Value (Smoke True)) "smoking" (causal_population_model default_params 100 smoke_key)
---   let dist_model = getM model empty
---   let infer_model branch = do
---         -- m
---         individuals <- dist_model
---         let (ns, table) = getMultiVal individuals
---         let features = table (constWorld branch ns)
---         return (ate features)
---   avg_ate_real <- inferAvg 10000 (infer_model False)
---   print "ATE (observed): "
---   print avg_ate_real
---   avg_ate_cf <- inferAvg 10000 (infer_model True)
---   print "ATE (counterfactual): "
---   print avg_ate_cf
-
--- main_V :: IO ()
--- main_V = do
---   -- IO
---   smoke_key <- createKey
--- --   let model = do_ smoke_key (Value (Smoke True)) "smoking" (bayesian_population_model 100 smoke_key)
---   let model = intervened_bayesian_population_model 1000 smoke_key
---   let dist_model = getM model empty
---   let infer_model = do
---         -- m
---         individuals <- dist_model
---         let (ns, table) = getMultiVal individuals
---         let real_features = table (constWorld False ns)
---         let cf_features = table (constWorld True ns)
---         forM_ real_features $ \feature ->
---         --   score (Exp (log (scores feature)))
---             score (scoreOf feature)
---         individuals2 <- dist_model
---         let (ns2, table2) = getMultiVal individuals2
---         return (ate $ table2 (constWorld True ns2))
---   avg_ate_bayesian <- inferAvg 10000 infer_model
---   print "ATE (counterfactual, bayesian):"
---   print avg_ate_bayesian
-
-{-
-High level:
-
-Given:
-empirical distribution OBS :: m (Stress, Smoking, Cancer)
-(generate this from synthetic data)
-
--------
-parameters <- parameter_prior
-
-[x1, ..., x100] <- 100 samples from model(parameters)
-for i = 1,..,100 do
-    score(OBS(x_i))
-
---- is actually the same as ---
-
-for i = 1,...,100 do
-    x <- model(parameters)
-    score(OBS(x))
-
-return parameters
------
-
-forall p : X -> [0,1] discrete distribution
-
-(score p(x)) // soft condition
-==
-(y <- p; condition(y == x)) // hard condition
-
-1. generative model that generates random variables (Z,X)
-2. condition on data `x`, i.e. compute P(Z|X = x), i.e. condition(X == x)
-3. for effiency, try to rewrite this using soft conditions (if somewhere X <- p; ...; condition(X = x)) ~> (score p(x))
-4. profit
-
--- conditioning on multiple variables
-
-(X1,...,Xn) <- 100 samples from model
-condition (forall i, Xi = xi)
--}
-
--- main :: IO ()
--- main = do
---   print "[TODO] This example needs cleaning up; please refer to the individual main_X functions to run them."
-  --   print "--------------- Smoking Model: \"Observation 1\" ---------------"
-  --   main_I -- OK
-  -- main_II -- OK
-  --   main_III -- OK
-  -- print "--------------- Smoking Model: \"Observation 2\" ---------------"
-  --   main_IV_A -- OK
-  --   main_IV_B -- OK
-  -- main_V_A -- OK
---   main_V_B -- OK
---   main_VI_A -- OK
---   main_VI_B -- OK
-  -- print "--------------- Smoking Model: \"Observation 3\" ---------------"
-  -- main_VII -- Everything ok apart from "main task" of inference.
---   let i :: Log Double = 0.1
---   let j :: Log Double = 0.1
---   let k = Exp (log (i * j))
---   print $ i * j
---   print k
---   print $ exp $ ln (i * j)
-  -- main_VII_2
-  -- main_IV -- not sure but looks ok
-  -- main_V --  weird unless it's expected.
