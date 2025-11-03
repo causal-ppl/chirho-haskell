@@ -73,8 +73,8 @@ We have implemented three sets of examples.
       return car_starts(fuel);
     }
     ```
-    This example demonstrates how both can be implemented in ChiRho using subtleties pertaining to how the applicative functor and the monad interact. More details [here](/notes/AliceBob.md). 
-- `keysnames` (in `KeysNames.hs`): contains examples showing why keys and names should be different, and what expressivity gain we obtain by keeping them distinct. In particular, we show why it might be useful to have interventions on the same intervention point and different names, as well as having interventions on different intervention points with the same name. More details [here](/notes/KeysNames.md).
+    This example demonstrates how both can be implemented in ChiRho using subtleties pertaining to how the applicative functor and the monad interact. 
+- `keysnames` (in `KeysNames.hs`): contains examples showing why keys and names should be different, and what expressivity gain we obtain by keeping them distinct. In particular, we show why it might be useful to have interventions on the same intervention point and different names, as well as having interventions on different intervention points with the same name.
 - `smoking` (in `Smoking.hs`): this is a full reproduction of the [ChiRho tutorial](https://basisresearch.github.io/chirho/tutorial_i.html). **To run this part, please first create a `/output` folder in the root directory of this project!!!!** We replicate all parts of the tutorial and reproduce the graphs/diagrams it would generate in `/output`. As running it takes quite a while, it might be useful advisable to only run parts of the `main` program at a time.
 
 ## Library
@@ -96,7 +96,7 @@ We have implemented three sets of examples.
         == ({b1, b2}, [{} -> 11, {b1} -> 12, {b2} -> 21, {b1, b2} -> 22])
        ```
        Without going into too much detail, this dependency-tracking and sharing mechanism is what corresponds to sharing non-intervened exogenous variables across the factual and counterfactual worlds when doing twinning. 
-    - This interacts with the probabilistic mechanism in the following way: we have an operation `sample : MultiVal (Caus a) -> Caus (MultiVal a)` that allows multiworld distributions to be turned into a distribution over multiworld samples. This is not a distributive law: the operation does not commute with the applicative structure of `MultiVal`. We exemplify this in the [AliceBob example](/notes/AliceBob.md).
+    - This interacts with the probabilistic mechanism in the following way: we have an operation `sample : MultiVal (Caus a) -> Caus (MultiVal a)` that allows multiworld distributions to be turned into a distribution over multiworld samples. This is not a distributive law: the operation does not commute with the applicative structure of `MultiVal`.
     - This interacts with the interventional mechanism in the following way: when inserting an intervention instruction, `do_` additionally requires the user to provide a name. This name is used by `do_` to generate a branching point when performing that intervention. The resulting multiworld value will now be supported on this additional name, which will distinguish worlds where the intervention has been applied, worlds where it has not. 
   - `Name.hs`: This file contains the constructs and utilities to deal with names of branching points.
 
