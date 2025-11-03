@@ -17,6 +17,8 @@ import Control.Monad.Trans.Class (lift)
 import Graphics.Matplotlib
 import Control.Monad.Bayes.Enumerator (toEmpiricalWeighted, toEmpirical, enumerateToDistribution, Enumerator, mass)
 import Control.Monad.Bayes.Inference.MCMC
+import System.CPUTime
+import Text.Printf
 
 
 {- MonadBayes helpers -}
@@ -765,7 +767,7 @@ vii_a_prior_distribution_and_true_ate = do
 vii_b_infer_ate_est_and_plot :: IO [Double]
 vii_b_infer_ate_est_and_plot = do
   print "--- VII-B: Infer ATE Estimate and Plot Posterior Distribution ---"
-  let n_individuals = 500
+  let n_individuals = 100
   -- Generate "data"
   smoke_key <- createKey
   let model = causal_population_model data_params n_individuals smoke_key
@@ -777,16 +779,16 @@ vii_b_infer_ate_est_and_plot = do
   print "Estimating Posterior Distribution"
   smoke_key2 <- createKey
   samples_ <- sampler $ mcmc MCMCConfig
-                {numMCMCSteps = 10000,
+                {numMCMCSteps = 50000,
                 proposal = SingleSiteMH,
-                numBurnIn = 500} $ posteriorATE n_individuals observational smoke_key2
+                numBurnIn = 2000} $ posteriorATE n_individuals observational smoke_key2
   let (smokeTrues, smokeFalses, ateEstimates) = unzip3 samples_
   let filename = "VII_interventional_data_posterior.png"
   print ("Plotting ATE estimates and saving in " ++ filename)
-  let plt = visualise_smoking_effects 10 smokeTrues smokeFalses "Interventional Data - Posterior Estimates"
+  let plt = visualise_smoking_effects 15 smokeTrues smokeFalses "Interventional Data - Posterior Estimates"
   pltResult <- file ("output/" ++ filename) plt
   print pltResult
-  let plt2 = visualise_ate 10 ateEstimates "Interventional Data - Posterior ATE Estimates"
+  let plt2 = visualise_ate 15 ateEstimates "Interventional Data - Posterior ATE Estimates"
   let filename2 = "VII_ate_interventional_data_posterior.png"
   print ("Plotting ATE estimates and saving in " ++ filename2)
   pltResult2 <- file ("output/" ++ filename2) plt2
@@ -857,6 +859,10 @@ main = do
   print "=== End of Observation 2 ==="
   print "=== Observation 3: causal inference is Bayesian inference ==="
   (prior_ate_estimates, true_ate_estimates) <- vii_a_prior_distribution_and_true_ate
+  start <- getCPUTime
   posterior_ate_estimates <- vii_b_infer_ate_est_and_plot
+  end <- getCPUTime
+  let diff = (fromIntegral (end - start)) / (10^12)
+  printf "Computation time: %0.3f sec\n" (diff :: Double)
   vii_c_plot_all prior_ate_estimates true_ate_estimates posterior_ate_estimates
   print "=== End of Observation 3 ==="

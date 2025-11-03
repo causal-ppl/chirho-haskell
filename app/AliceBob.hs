@@ -58,6 +58,7 @@ bobCarModel fuelKey = do
   let carStarts = ((&&) <$> fuelInt) <*> battery
   return (fuelInt, battery, carStarts)
 
+
 bobInferenceCode :: IO ()
 bobInferenceCode = do
   -- IO
@@ -75,6 +76,34 @@ bobInferenceCode = do
   avg <- infer $ run intervenedConditionedModel
   print avg
 
+
+-- Alt implementation
+bobCarModelIntervened ::
+  (MonadDistribution m) =>
+  m (MultiVal Bool, MultiVal Bool, MultiVal Bool)
+bobCarModelIntervened = do
+  fuel <- sample (pure (bernoulli 0.8))
+  fuelInt <- intervene fuel (Value True) "fuelTrue"
+  battery <- sample (pure (bernoulli 0.9))
+  let carStarts = ((&&) <$> fuelInt) <*> battery
+  return (fuelInt, battery, carStarts)
+
+-- So then for any fuelKey :: InterventionPointKey Bool, run (do fuelKey (Value True) "fuelTrue" (bobCarModel fuelKey)) is equivalent to bobCarModelIntervened
+
+bobCarModelInference :: (MonadMeasure m) => m Bool
+bobCarModelInference = do
+  (fuelInt, battery, carStarts) <- bobCarModelIntervened
+  condition (getFactual carStarts == False)
+  return (getCounterfactual carStarts)
+
+bobCarModelInference2 :: (MonadMeasure m) => m Bool
+bobCarModelInference2 = do
+  fuel <- bernoulli 0.8
+  battery <- bernoulli 0.9
+  condition (not (battery && fuel))
+  return battery
+
+-- So then we have that bobCarModelInference == bobCarModelInference2
 
 -- Car starting example: Alice
 
