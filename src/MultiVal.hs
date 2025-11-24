@@ -133,6 +133,17 @@ sample = memDist
 data Intervention t a = None | Value a | Func (a -> t a)
 
 intervene :: (Monad t) => MultiVal a -> Intervention t a -> Name -> t (MultiVal a)
+intervene (MultiVal (ns, f)) (Func g) n =
+  let newNameSet = insertName n ns
+   in memDist
+        ( MultiVal
+            ( newNameSet,
+              \w -> case lookupWorld n w of
+                Just True -> g (f w)
+                -- Just True -> let fw = insertWorld n False w in g (f fw)
+                _ -> return (f w) 
+            )
+        )
 intervene (MultiVal (ns, f)) None _ = return (MultiVal (ns, f)) -- No change
 intervene (MultiVal (ns, f)) (Value v) n =
   let newNameSet = insertName n ns
@@ -144,16 +155,8 @@ intervene (MultiVal (ns, f)) (Value v) n =
                 _ -> f w
             )
         )
-intervene (MultiVal (ns, f)) (Func g) n =
-  let newNameSet = insertName n ns
-   in memDist
-        ( MultiVal
-            ( newNameSet,
-              \w -> case lookupWorld n w of
-                Just True -> return (f w)
-                _ -> g (f w)
-            )
-        )
+
+
 
 liftOp :: (Monad t) => (a -> t b) -> MultiVal a -> t (MultiVal b)
 liftOp f = memDist . fmap f
