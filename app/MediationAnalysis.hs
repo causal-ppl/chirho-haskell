@@ -29,6 +29,8 @@ testModelMain = do
     print "Original model (no interventions):"
     print y
 
+-- TODO: Add mediation analysis code here
+
 main :: IO ()
 main = do
     testModelMain
