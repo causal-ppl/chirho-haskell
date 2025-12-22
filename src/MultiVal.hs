@@ -3,7 +3,7 @@ module MultiVal where
 
 import Control.Monad.Bayes.Class
 import Data.List (sort, sortBy)
-import Data.Map (Map, empty, fromList, fromSet, insert, lookup, restrictKeys, toList, union)
+import Data.Map (Map, empty, fromList, fromSet, insert, lookup, restrictKeys, toList, union, mapWithKey)
 import Data.Set (Set, empty, fromList, insert, toList, union)
 import Name
     ( NameSet(..),
@@ -12,6 +12,7 @@ import Name
       insertName,
       unionNameSet,
       fromListNameSet )
+import Data.Maybe (fromMaybe)
 
 -- | This module defines the MultiVal type and related functions.
 
@@ -49,6 +50,11 @@ fromListWorld xs = W (Data.Map.fromList xs)
 constWorld :: Bool -> NameSet -> World
 constWorld b (NS set) = W (Data.Map.fromSet (const b) set)
 
+type PartialWorld = World
+
+replaceIdx :: PartialWorld -> World -> World
+replaceIdx (W pm) (W m) = W $ mapWithKey (\k v -> fromMaybe v (Data.Map.lookup k pm)) m
+
 newtype MultiVal a = MultiVal (NameSet, World -> a)
 -- MultiVal a represents a value that can depend on multiple "names" (branching points)
 -- \sum_(n \subseteq Names) (2^n -> a)
@@ -79,7 +85,7 @@ instance (Show a) => Show (MultiVal a) where
      in "MultiVal { ns: "
           ++ show ns
           ++ ", f: ["
-          ++ concatMap (\(worldStr, val) -> worldStr ++ ": " ++ show val ++ ", ") (zip (map show relevantWorlds) (map f relevantWorlds))
+          ++ concatMap (\(worldStr, val) -> worldStr ++ ": " ++ show val ++ ", ") (zip (Prelude.map show relevantWorlds) (Prelude.map f relevantWorlds))
           ++ "] }"
 
 -- TODO: Make a better printing mechanism
@@ -130,20 +136,9 @@ memDist (MultiVal (ns, f)) =
 sample :: (Monad t) => MultiVal (t a) -> t (MultiVal a)
 sample = memDist
 
-data Intervention t a = None | Value a | Func (a -> t a)
+data Intervention t a = None | Value a | Func (a -> t a) | Idx (PartialWorld)
 
 intervene :: (Monad t) => MultiVal a -> Intervention t a -> Name -> t (MultiVal a)
-intervene (MultiVal (ns, f)) (Func g) n =
-  let newNameSet = insertName n ns
-   in memDist
-        ( MultiVal
-            ( newNameSet,
-              \w -> case lookupWorld n w of
-                Just True -> g (f w)
-                -- Just True -> let fw = insertWorld n False w in g (f fw)
-                _ -> return (f w) 
-            )
-        )
 intervene (MultiVal (ns, f)) None _ = return (MultiVal (ns, f)) -- No change
 intervene (MultiVal (ns, f)) (Value v) n =
   let newNameSet = insertName n ns
@@ -155,7 +150,27 @@ intervene (MultiVal (ns, f)) (Value v) n =
                 _ -> f w
             )
         )
-
+intervene (MultiVal (ns, f)) (Func g) n =
+  let newNameSet = insertName n ns
+   in memDist
+        ( MultiVal
+            ( newNameSet,
+              \w -> case lookupWorld n w of
+                Just True -> g (f w)
+                -- Just True -> let fw = insertWorld n False w in g (f fw)
+                _ -> return (f w)
+            )
+        )
+intervene (MultiVal (ns, f)) (Idx pw) n = 
+  let newNameSet = insertName n ns
+   in return
+        ( MultiVal
+            ( newNameSet,
+              \w -> case lookupWorld n w of
+                Just True -> f (replaceIdx pw w)
+                _ -> f w
+            )
+        )
 
 
 liftOp :: (Monad t) => (a -> t b) -> MultiVal a -> t (MultiVal b)
