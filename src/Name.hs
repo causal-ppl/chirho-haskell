@@ -16,6 +16,9 @@ insertName n (NS set) = NS (Data.Set.insert n set)
 unionNameSet :: NameSet -> NameSet -> NameSet
 unionNameSet (NS set1) (NS set2) = NS (Data.Set.union set1 set2)
 
+differenceNameSet :: NameSet -> NameSet -> NameSet
+differenceNameSet (NS set1) (NS set2) = NS (Data.Set.difference set1 set2)
+
 fromListNameSet :: [Name] -> NameSet
 fromListNameSet names = NS (Data.Set.fromList names)
 
